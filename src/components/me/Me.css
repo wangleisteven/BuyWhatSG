@@ -1,0 +1,190 @@
+/* Me page styles */
+.me-page {
+  padding: var(--spacing-md);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Profile section */
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.profile-section h2 {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-xl);
+}
+
+.profile-section p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Settings section */
+.settings-section {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.settings-section h3 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  display: flex;
+  align-items: center;
+}
+
+.setting-icon {
+  margin-right: var(--spacing-md);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+}
+
+/* Toggle button */
+.toggle-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.toggle-button:focus {
+  outline: none;
+}
+
+.toggle-slider {
+  width: 50px;
+  height: 24px;
+  background-color: var(--color-border);
+  border-radius: 12px;
+  position: relative;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.toggle-slider.active {
+  background-color: var(--color-primary);
+}
+
+.toggle-knob {
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform var(--transition-fast) ease;
+}
+
+.toggle-slider.active .toggle-knob {
+  transform: translateX(26px);
+}
+
+/* Install prompt */
+.install-prompt {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--spacing-md));
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-primary);
+  color: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  z-index: var(--z-index-toast);
+  animation: slideUp var(--transition-fast) ease;
+  max-width: 90%;
+}
+
+/* Account section */
+.account-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.full-width {
+  width: 100%;
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+/* App info */
+.app-info {
+  text-align: center;
+  padding: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.app-info h3 {
+  margin-top: 0;
+  font-size: var(--font-size-md);
+}
+
+.app-info p {
+  margin: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.copyright {
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-xs);
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .me-page {
+    padding: var(--spacing-lg);
+  }
+  
+  .profile-section,
+  .settings-section {
+    padding: var(--spacing-lg);
+  }
+  
+  .install-prompt {
+    bottom: var(--spacing-xl);
+    max-width: 400px;
+  }
+}

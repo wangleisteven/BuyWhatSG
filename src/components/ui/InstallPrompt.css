@@ -1,0 +1,90 @@
+/* Install prompt styles */
+.install-prompt-container {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + var(--spacing-md));
+  left: var(--spacing-md);
+  right: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-index-toast);
+  animation: slideUp var(--transition-fast) ease;
+}
+
+.install-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.install-prompt-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.install-prompt-text h3 {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-md);
+}
+
+.install-prompt-text p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.install-prompt-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.install-prompt-dismiss:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .install-prompt-container {
+    left: auto;
+    right: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    max-width: 400px;
+  }
+}
