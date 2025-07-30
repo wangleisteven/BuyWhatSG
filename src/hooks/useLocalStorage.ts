@@ -13,7 +13,7 @@ export function useLocalStorage<T>(
   initialValue: T,
   isAuthenticated: boolean = false,
   userId?: string
-): [T, (value: T | ((val: T) => T)) => void] {
+): [T, (value: T | ((val: T) => T)) => void, { getGuestData: () => T; copyGuestDataToAuth: () => T }] {
   // Determine the actual storage key based on authentication state
   const storageKey = isAuthenticated && userId 
     ? `${key}_auth_${userId}` // Authenticated user-specific storage
@@ -42,6 +42,38 @@ export function useLocalStorage<T>(
   useEffect(() => {
     setStoredValue(readValue());
   }, [isAuthenticated, userId]);
+
+  // Helper function to get guest data
+  const getGuestData = (): T => {
+    if (typeof window === 'undefined') {
+      return initialValue;
+    }
+    
+    try {
+      const guestKey = `${key}_guest`;
+      const item = window.localStorage.getItem(guestKey);
+      return item ? (JSON.parse(item) as T) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading guest localStorage key "${key}_guest":`, error);
+      return initialValue;
+    }
+  };
+
+  // Helper function to copy guest data to authenticated storage
+  const copyGuestDataToAuth = (): T => {
+    const guestData = getGuestData();
+    if (isAuthenticated && userId && guestData !== initialValue) {
+      // Save guest data to authenticated storage
+      try {
+        const authKey = `${key}_auth_${userId}`;
+        window.localStorage.setItem(authKey, JSON.stringify(guestData));
+        console.log(`Copied guest data to authenticated storage: ${authKey}`);
+      } catch (error) {
+        console.warn(`Error copying guest data to authenticated storage:`, error);
+      }
+    }
+    return guestData;
+  };
 
   // Return a wrapped version of useState's setter function that persists the new value to localStorage
   const setValue = (value: T | ((val: T) => T)) => {
@@ -74,5 +106,5 @@ export function useLocalStorage<T>(
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [storageKey]);
 
-  return [storedValue, setValue];
+  return [storedValue, setValue, { getGuestData, copyGuestDataToAuth }];
 }

@@ -3,6 +3,8 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
+import { compressImage, getDataUrlSize, isImageFile } from '../../utils/imageUtils';
+import Toast from '../ui/Toast';
 import './Items.css';
 
 type EditItemModalProps = {
@@ -18,6 +20,8 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   const [category, setCategory] = useState(item.category);
   const [photoURL, setPhotoURL] = useState(item.photoURL || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Common categories for shopping items
   const categories = [
@@ -62,42 +66,65 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
     }
   };
   
-  // Handle item deletion
+  // Handle item deletion - same behavior as swipe to delete
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        await deleteItem(listId, item.id);
-        onClose();
-      } catch (error) {
-        console.error('Error deleting item:', error);
-        // Error is already handled in the context with showAlert
-      }
+    try {
+      await deleteItem(listId, item.id);
+      onClose(); // Dismiss the popup
+      // The undo toast will be shown automatically by the ListDetail component
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      // Error is already handled in the context with showAlert
     }
   };
   
   // Handle photo upload
-  const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Check if it's an image file
+    if (!isImageFile(file)) {
+      setErrorMessage('Please select a valid image file.');
+      setShowErrorToast(true);
+      return;
+    }
+    
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 5MB.');
+      setErrorMessage('File size must be less than 5MB. Please choose a smaller photo.');
+      setShowErrorToast(true);
       return;
     }
     
     setIsUploading(true);
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setPhotoURL(event.target?.result as string);
+    try {
+      let finalDataUrl: string;
+      
+      // If file is larger than 1MB, compress it
+      if (file.size > 1024 * 1024) {
+        finalDataUrl = await compressImage(file, 1024 * 1024, 0.8);
+      } else {
+        // File is already under 1MB, convert to data URL directly
+        finalDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            resolve(event.target?.result as string);
+          };
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      setPhotoURL(finalDataUrl);
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      setErrorMessage('Failed to process photo. Please try again.');
+      setShowErrorToast(true);
+    } finally {
       setIsUploading(false);
-    };
-    reader.onerror = () => {
-      alert('Failed to read file.');
-      setIsUploading(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
   
   // Handle photo removal
@@ -168,10 +195,22 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
             <label htmlFor="edit-item-quantity">Quantity</label>
             <input
               id="edit-item-quantity"
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={quantity.toString()}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || /^[1-9][0-9]*$/.test(value)) {
+                  setQuantity(value === '' ? 1 : parseInt(value));
+                }
+              }}
+              onBlur={(e) => {
+                if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                  setQuantity(1);
+                }
+              }}
+              placeholder="1"
             />
           </div>
           
@@ -216,6 +255,15 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
           </div>
         </form>
       </div>
+      
+      {/* Error toast */}
+      {showErrorToast && (
+        <Toast
+          message={errorMessage}
+          type="error"
+          onClose={() => setShowErrorToast(false)}
+        />
+      )}
     </div>
   );
 };

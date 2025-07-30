@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import type { DropResult } from 'react-beautiful-dnd';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import ShoppingListItem from '../items/ShoppingListItem';
@@ -11,11 +9,7 @@ import AddItemForm from '../items/AddItemForm';
 import Toast from '../ui/Toast';
 import './ListDetail.css';
 
-// Helper function to sanitize IDs for react-beautiful-dnd
-const sanitizeId = (id: string): string => {
-  // Remove emojis and special characters, keep only alphanumeric, hyphens, and underscores
-  return id.replace(/[^a-zA-Z0-9\-_]/g, '');
-};
+
 
 const ListDetail = () => {
   const { listId } = useParams<{ listId: string }>();
@@ -23,8 +17,7 @@ const ListDetail = () => {
   const { 
     lists, 
     currentList, 
-    setCurrentList, 
-    reorderItems,
+    setCurrentList,
     lastDeletedItem,
     undoDeleteItem
   } = useShoppingList();
@@ -62,22 +55,7 @@ const ListDetail = () => {
     }
   }, [lastDeletedItem, listId]);
   
-  // Handle drag and drop reordering
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination || !currentList) return;
-    
-    const sourceIndex = result.source.index;
-    const destinationIndex = result.destination.index;
-    
-    if (sourceIndex === destinationIndex) return;
-    
-    try {
-      await reorderItems(currentList.id, sourceIndex, destinationIndex);
-    } catch (error) {
-      console.error('Error reordering items:', error);
-      // Error is already handled in the context with showAlert
-    }
-  };
+
   
   // Handle list title update functionality removed as it's not being used
   
@@ -91,9 +69,64 @@ const ListDetail = () => {
     return <div className="container">Loading...</div>;
   }
   
+  // Sort items by category -> status (todo > done) -> item last update time
+  const sortedItems = [...currentList.items].sort((a, b) => {
+    // First sort by completion status (uncompleted first)
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+    
+    // Then sort by category (for uncompleted items)
+    if (!a.completed && !b.completed) {
+      const categoryOrder = [
+        'produce', 'dairy', 'meat', 'bakery', 'frozen', 
+        'pantry', 'beverages', 'household', 'personal', 'default'
+      ];
+      
+      const aCategoryIndex = categoryOrder.indexOf(a.category || 'default');
+      const bCategoryIndex = categoryOrder.indexOf(b.category || 'default');
+      
+      if (aCategoryIndex !== bCategoryIndex) {
+        return aCategoryIndex - bCategoryIndex;
+      }
+    }
+    
+    // Finally sort by last update time (most recent first)
+    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return bTime - aTime;
+  });
+  
   // Separate completed and uncompleted items
-  const uncompletedItems = currentList.items.filter(item => !item.completed);
-  const completedItems = currentList.items.filter(item => item.completed);
+  const uncompletedItems = sortedItems.filter(item => !item.completed);
+  const completedItems = sortedItems.filter(item => item.completed);
+  
+  // Group uncompleted items by category
+  const categoryOrder = [
+    'produce', 'dairy', 'meat', 'bakery', 'frozen', 
+    'pantry', 'beverages', 'household', 'personal', 'default'
+  ];
+  
+  const categoryNames: { [key: string]: string } = {
+    'produce': 'Produce',
+    'dairy': 'Dairy',
+    'meat': 'Meat',
+    'bakery': 'Bakery',
+    'frozen': 'Frozen',
+    'pantry': 'Pantry',
+    'beverages': 'Beverages',
+    'household': 'Household',
+    'personal': 'Personal Care',
+    'default': 'General'
+  };
+  
+  const groupedItems = categoryOrder.reduce((acc, categoryId) => {
+    const categoryItems = uncompletedItems.filter(item => item.category === categoryId);
+    if (categoryItems.length > 0) {
+      acc[categoryId] = categoryItems;
+    }
+    return acc;
+  }, {} as { [key: string]: typeof uncompletedItems });
   
   return (
     <div className="list-detail container">
@@ -114,74 +147,49 @@ const ListDetail = () => {
         />
       )}
       
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="shopping-list" isDropDisabled={false} isCombineEnabled={false} ignoreContainerClipping={false}>
-          {(provided) => (
-            <div
-              className="shopping-list"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              {uncompletedItems.length === 0 && completedItems.length === 0 ? (
-                <div className="empty-list">
-                  <p>This list is empty.</p>
-                  <p>Tap the Add Item button to add your first item!</p>
-                </div>
-              ) : (
-                <>
-                  {/* Uncompleted items */}
-                  {uncompletedItems.map((item, index) => {
-                    const sanitizedId = sanitizeId(item.id);
-                    return (
-                    <Draggable 
-                      key={`draggable-${sanitizedId}`} 
-                      draggableId={`draggable-${sanitizedId}`} 
-                      index={index}
-                    >
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''}`}
-                        >
-                          <ShoppingListItem
-                            item={item}
-                            listId={currentList.id}
-                            onEdit={() => setEditingItem(item)}
-                            isDraggable={true}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                    );
-                  })}
-                  
-                  {/* Completed items section */}
-                  {completedItems.length > 0 && (
-                    <div className="completed-section">
-                      <h3 className="completed-heading">
-                        Completed ({completedItems.length})
-                      </h3>
-                      
-                      {completedItems.map((item) => (
-                        <ShoppingListItem
-                          key={item.id}
-                          item={item}
-                          listId={currentList.id}
-                          onEdit={() => setEditingItem(item)}
-                          isDraggable={false}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+      <div className="shopping-list">
+        {uncompletedItems.length === 0 && completedItems.length === 0 ? (
+          <div className="empty-list">
+            <p>This list is empty.</p>
+            <p>Tap the Add Item button to add your first item!</p>
+          </div>
+        ) : (
+          <>
+            {/* Uncompleted items grouped by category */}
+            {Object.entries(groupedItems).map(([categoryId, categoryItems]) => (
+              <div key={categoryId} className="category-group">
+                <h4 className="category-heading">{categoryNames[categoryId]}</h4>
+                {categoryItems.map((item) => (
+                  <ShoppingListItem
+                    key={item.id}
+                    item={item}
+                    listId={currentList.id}
+                    onEdit={() => setEditingItem(item)}
+                  />
+                ))}
+              </div>
+            ))}
+            
+            {/* Completed items section */}
+            {completedItems.length > 0 && (
+              <div className="completed-section">
+                <h3 className="completed-heading">
+                  Completed ({completedItems.length})
+                </h3>
+                
+                {completedItems.map((item) => (
+                  <ShoppingListItem
+                    key={item.id}
+                    item={item}
+                    listId={currentList.id}
+                    onEdit={() => setEditingItem(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
       
       {/* Edit item modal */}
       {editingItem && (

@@ -67,6 +67,7 @@
 .shopping-list-item-name {
   font-weight: 500;
   margin-bottom: var(--spacing-xs);
+
 }
 
 .shopping-list-item.completed .shopping-list-item-name {
@@ -74,7 +75,19 @@
   color: var(--color-text-secondary);
 }
 
-.shopping-list-item-quantity,
+.shopping-list-item-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
+
+.shopping-list-item-quantity {
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  font-weight: 500;
+}
+
 .shopping-list-item-category {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);

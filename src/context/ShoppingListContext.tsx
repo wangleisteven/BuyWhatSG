@@ -90,7 +90,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const { showAlert } = useAlert();
   
   // Initialize lists using our enhanced useLocalStorage hook with separate storage for authenticated and non-authenticated users
-  const [lists, setLists] = useLocalStorage<ShoppingList[]>(
+  const [lists, setLists, { getGuestData, copyGuestDataToAuth }] = useLocalStorage<ShoppingList[]>(
     'shoppingLists',
     [createEducationList()],
     isAuthenticated,
@@ -273,21 +273,23 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           
           // Only sync guest lists if this is a first-time user (no existing lists)
           if (!userHasExistingLists) {
-            const guestStorageKey = 'shoppingLists_guest';
-            const savedGuestLists = localStorage.getItem(guestStorageKey);
+            const guestLists = getGuestData();
+            const listsToSync = guestLists.filter((list: ShoppingList) => list.id !== 'education-list');
             
-            if (savedGuestLists) {
-              const listsToSync = JSON.parse(savedGuestLists).filter((list: ShoppingList) => list.id !== 'education-list');
-              
-              if (listsToSync.length > 0) {
-                try {
-                  await syncLocalListsToFirestore(listsToSync, user.id);
-                  console.log('Successfully synced local lists to Firebase');
-                } catch (syncError) {
-                  console.warn('Error syncing local lists to Firebase:', syncError);
-                  // Continue even if sync fails - user can still use the app
-                }
+            if (listsToSync.length > 0) {
+              try {
+                // Copy guest data to authenticated storage
+                copyGuestDataToAuth();
+                // Sync to Firebase
+                await syncLocalListsToFirestore(listsToSync, user.id);
+                console.log('Successfully synced guest lists to Firebase for new user');
+              } catch (syncError) {
+                console.warn('Error syncing guest lists to Firebase:', syncError);
+                // Even if Firebase sync fails, we still copied the data locally
               }
+            } else {
+              // No guest lists to sync, but still copy any guest data
+              copyGuestDataToAuth();
             }
           }
           
@@ -326,25 +328,26 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           setIsLoadingData(false);
         }
       } else if (!isAuthenticated && !loading) {
-        // User logged out - reset to guest storage
+        // User logged out - switch back to guest storage
         setIsLoadingData(true);
         try {
-          // Our useLocalStorage hook will automatically switch to guest storage
-          // Just ensure we have the education list
-          const educationList = lists.find(list => list.id === 'education-list') || createEducationList();
-          const userLists = lists.filter(list => list.id !== 'education-list');
+          // Get guest data from localStorage (preserved separately)
+          const guestLists = getGuestData();
           
-          const filteredLists = [educationList];
-          if (userLists.length > 0) {
-            filteredLists.push(userLists[0]); // Keep only the first user list
-          }
+          // Ensure we have the education list
+          const educationList = guestLists.find(list => list.id === 'education-list') || createEducationList();
+          const otherGuestLists = guestLists.filter(list => list.id !== 'education-list');
           
-          setLists(filteredLists);
+          // Restore all guest lists (not just the first one)
+          const restoredLists = [educationList, ...otherGuestLists];
+          setLists(restoredLists);
           
-          // Clear current list if it's not in the filtered lists
-          if (currentList && !filteredLists.find(list => list.id === currentList.id)) {
+          // Clear current list if it's not in the restored lists
+          if (currentList && !restoredLists.find(list => list.id === currentList.id)) {
             setCurrentList(null);
           }
+          
+          console.log(`Restored ${otherGuestLists.length} guest lists after logout`);
         } catch (error) {
           console.error('Error handling logout:', error);
           setLists([createEducationList()]);
@@ -577,7 +580,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     const newItem: ShoppingItem = {
       ...item,
       id: generateId(),
-      position: 0
+      position: 0,
+      updatedAt: Date.now()
     };
 
     try {
@@ -641,6 +645,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         currentItem = currentList.items.find(item => item.id === itemId);
       }
       
+      // Add updatedAt to the updates
+      const updatesWithTimestamp = { ...updates, updatedAt: Date.now() };
+      
       // Update local state immediately for responsive UI
       setLists(prevLists =>
         prevLists.map(list => {
@@ -649,7 +656,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
               ...list,
               items: list.items.map(item =>
                 item.id === itemId
-                  ? { ...item, ...updates }
+                  ? { ...item, ...updatesWithTimestamp }
                   : item
               ),
               updatedAt: Date.now()
@@ -664,16 +671,16 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         queueOperation(async () => {
           try {
             // First try to update using firestoreId if available
-            if (currentItem.firestoreId) {
-              await updateItemInFirestore(currentItem.firestoreId, updates, user.id);
+            if (currentItem?.firestoreId) {
+              await updateItemInFirestore(currentItem.firestoreId, updatesWithTimestamp, user.id);
             } else {
               // If no firestoreId, try to update using local id (might fail if item doesn't exist in Firestore)
               try {
-                await updateItemInFirestore(itemId, updates, user.id);
+                await updateItemInFirestore(itemId, updatesWithTimestamp, user.id);
               } catch (updateError: any) {
                 // If the error is because the document doesn't exist, save as a new item instead
                 if (updateError.code === 'not-found' || updateError.message?.includes('No document to update')) {
-                  const updatedItem = { ...currentItem, ...updates };
+                  const updatedItem: ShoppingItem = { ...currentItem!, ...updatesWithTimestamp };
                   const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
                   
                   // Update the local item with the Firestore ID

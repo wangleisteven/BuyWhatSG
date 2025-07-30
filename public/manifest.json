@@ -3,7 +3,7 @@
   "short_name": "BuyWhatSG",
   "description": "A simple shopping list app to help you organize your shopping",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#4caf50",
   "icons": [

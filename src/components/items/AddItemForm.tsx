@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
+import { compressImage, getDataUrlSize, isImageFile } from '../../utils/imageUtils';
+import Toast from '../ui/Toast';
 import './Items.css';
 
 type AddItemFormProps = {
@@ -16,6 +18,8 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const [category, setCategory] = useState('default');
   const [photoURL, setPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Common categories for shopping items
   const categories = [
@@ -63,23 +67,44 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check if it's an image file
+    if (!isImageFile(file)) {
+      setErrorMessage('Please select a valid image file.');
+      setShowErrorToast(true);
+      return;
+    }
+
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      setErrorMessage('File size must be less than 5MB. Please choose a smaller photo.');
+      setShowErrorToast(true);
       return;
     }
 
     setIsUploading(true);
     try {
-      // Create a data URL for preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPhotoURL(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      let finalDataUrl: string;
+      
+      // If file is larger than 1MB, compress it
+      if (file.size > 1024 * 1024) {
+        finalDataUrl = await compressImage(file, 1024 * 1024, 0.8);
+      } else {
+        // File is already under 1MB, convert to data URL directly
+        finalDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            resolve(event.target?.result as string);
+          };
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      setPhotoURL(finalDataUrl);
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      alert('Failed to upload photo');
+      console.error('Error processing photo:', error);
+      setErrorMessage('Failed to process photo. Please try again.');
+      setShowErrorToast(true);
     } finally {
       setIsUploading(false);
     }
@@ -153,10 +178,22 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
             <label htmlFor="item-quantity">Quantity</label>
             <input
               id="item-quantity"
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={quantity.toString()}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || /^[1-9][0-9]*$/.test(value)) {
+                  setQuantity(value === '' ? 1 : parseInt(value));
+                }
+              }}
+              onBlur={(e) => {
+                if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                  setQuantity(1);
+                }
+              }}
+              placeholder="1"
             />
           </div>
           
@@ -193,6 +230,15 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
           </div>
         </form>
       </div>
+      
+      {/* Error toast */}
+      {showErrorToast && (
+        <Toast
+          message={errorMessage}
+          type="error"
+          onClose={() => setShowErrorToast(false)}
+        />
+      )}
     </div>
   );
 };

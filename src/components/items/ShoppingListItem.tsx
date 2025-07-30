@@ -1,4 +1,4 @@
-import { FiTrash2, FiEdit2, FiMenu } from 'react-icons/fi';
+import { FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import { useSwipe } from '../../hooks/useSwipe';
@@ -8,14 +8,12 @@ type ShoppingListItemProps = {
   item: ShoppingItem;
   listId: string;
   onEdit: () => void;
-  isDraggable?: boolean;
 };
 
 const ShoppingListItem = ({ 
   item, 
   listId, 
-  onEdit,
-  isDraggable = true 
+  onEdit
 }: ShoppingListItemProps) => {
   const { toggleItemCompletion, deleteItem } = useShoppingList();
   
@@ -86,11 +84,7 @@ const ShoppingListItem = ({
         className="shopping-list-item-content"
         style={getSwipeStyle()}
       >
-        {isDraggable && (
-          <div className="drag-handle">
-            <FiMenu size={16} />
-          </div>
-        )}
+
         
         <div 
           className="shopping-list-item-checkbox"
@@ -103,38 +97,15 @@ const ShoppingListItem = ({
           className="shopping-list-item-details"
           onClick={onEdit}
         >
-          <div className="shopping-list-item-name">{item.name}</div>
-          
           {item.quantity > 1 && (
-            <div className="shopping-list-item-quantity">
-              Qty: {item.quantity}
-            </div>
+            <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
           )}
-          
-          {item.category && item.category !== 'default' && (
-            <div className="shopping-list-item-category">
-              {item.category}
-            </div>
+          {item.quantity == 1 && (
+            <div className="shopping-list-item-name">{item.name}</div>
           )}
         </div>
         
-        <div className="shopping-list-item-actions">
-          <button 
-            className="button-icon-small"
-            onClick={onEdit}
-            aria-label="Edit item"
-          >
-            <FiEdit2 size={18} />
-          </button>
-          
-          <button 
-            className="button-icon-small danger"
-            onClick={handleDelete}
-            aria-label="Delete item"
-          >
-            <FiTrash2 size={18} />
-          </button>
-        </div>
+        {/* Actions removed - edit by tapping item, delete by swiping left */}
       </div>
       
       {/* Delete button that appears when swiping */}
