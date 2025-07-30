@@ -37,7 +37,7 @@ A Progressive Web App (PWA) for managing shopping lists, built with React, TypeS
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/buywhatsg.git
+git clone https://github.com/wangleisteven/BuyWhatSG.git
 cd buywhatsg
 ```
 
