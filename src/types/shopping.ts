@@ -7,6 +7,7 @@ export type ShoppingItem = {
   category: string;
   photoURL?: string;
   position: number;
+  firestoreId?: string; // ID of the document in Firestore, may be different from local id
 };
 
 export type ShoppingList = {

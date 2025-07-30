@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { KeyboardEvent, ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiMenu } from 'react-icons/fi';
+import { FiPlus } from 'react-icons/fi';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import type { DropResult } from 'react-beautiful-dnd';
 import { useShoppingList } from '../../context/ShoppingListContext';
@@ -25,7 +24,6 @@ const ListDetail = () => {
     lists, 
     currentList, 
     setCurrentList, 
-    updateList,
     reorderItems,
     lastDeletedItem,
     undoDeleteItem
@@ -33,8 +31,6 @@ const ListDetail = () => {
   
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
   const [showUndoToast, setShowUndoToast] = useState(false);
   
   // Find the list by ID
@@ -47,7 +43,6 @@ const ListDetail = () => {
     const list = lists.find(list => list.id === listId);
     if (list) {
       setCurrentList(list);
-      setNewTitle(list.name);
     } else {
       navigate('/lists');
     }
@@ -84,18 +79,7 @@ const ListDetail = () => {
     }
   };
   
-  // Handle list title update
-  const handleUpdateTitle = async () => {
-    if (!currentList || newTitle.trim() === '') return;
-    
-    try {
-      await updateList(currentList.id, { name: newTitle.trim() });
-      setIsEditingTitle(false);
-    } catch (error) {
-      console.error('Error updating list title:', error);
-      // Error is already handled in the context with showAlert
-    }
-  };
+  // Handle list title update functionality removed as it's not being used
   
   // Handle undo delete
   const handleUndoDelete = () => {
@@ -180,7 +164,7 @@ const ListDetail = () => {
                         Completed ({completedItems.length})
                       </h3>
                       
-                      {completedItems.map((item, index) => (
+                      {completedItems.map((item) => (
                         <ShoppingListItem
                           key={item.id}
                           item={item}

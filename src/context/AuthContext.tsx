@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { auth, googleProvider } from '../config/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
+import { useToast } from './ToastContext';
 
 type User = {
   id: string;
@@ -16,6 +17,7 @@ type AuthContextType = {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  isOnline: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,8 +25,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const { addToast } = useToast();
 
   const isAuthenticated = user !== null;
+
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Convert Firebase user to app user
   const formatUser = (firebaseUser: FirebaseUser): User => ({
@@ -36,6 +54,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Login with Google
   const loginWithGoogle = async (): Promise<void> => {
+    if (!isOnline) {
+      addToast({
+        message: 'Cannot sign in while offline',
+        type: 'warning',
+        duration: 3000
+      });
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -71,6 +98,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout function
   const logout = async (): Promise<void> => {
+    if (!isOnline) {
+      addToast({
+        message: 'Cannot sign out while offline',
+        type: 'warning',
+        duration: 3000
+      });
+      return;
+    }
+    
     try {
       await signOut(auth);
       // User is set to null by the auth state listener
@@ -113,7 +149,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        loginWithGoogle,
+        logout,
+        loading,
+        isOnline
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

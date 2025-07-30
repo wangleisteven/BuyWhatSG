@@ -1,15 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '../context/ToastContext';
+
+type UseOfflineReturn = {
+  isOffline: boolean;
+  wasOffline: boolean;
+  resetWasOffline: () => void;
+};
 
 /**
- * Custom hook to detect if the user is offline
- * @returns {boolean} True if the user is offline, false otherwise
+ * Enhanced hook to detect if the user is offline and track when connection is restored
+ * @returns {UseOfflineReturn} Object containing offline status and tracking state
  */
-export const useOffline = (): boolean => {
+export const useOffline = (): UseOfflineReturn => {
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
+  const [wasOffline, setWasOffline] = useState<boolean>(false);
+  const { addToast } = useToast();
+
+  const resetWasOffline = useCallback(() => {
+    setWasOffline(false);
+  }, []);
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      if (isOffline) {
+        setWasOffline(true);
+      }
+      setIsOffline(false);
+    };
+    
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -18,7 +39,7 @@ export const useOffline = (): boolean => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isOffline]);
 
-  return isOffline;
+  return { isOffline, wasOffline, resetWasOffline };
 };

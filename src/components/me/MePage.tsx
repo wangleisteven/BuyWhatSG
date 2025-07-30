@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload } from 'react-icons/fi';
+import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { isStandalone } from '../../utils/helpers';
+import './MePage.css';
 import './Me.css';
 
 const MePage = () => {
-  const { user, logout, loginWithGoogle, loading } = useAuth();
+  const { user, logout, loginWithGoogle, loading, isOnline } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -81,11 +82,14 @@ const MePage = () => {
             <h2>Guest</h2>
             <p>Not signed in</p>
             <button 
-              className="button-primary"
+              className={`button-primary ${!isOnline ? 'disabled' : ''}`}
               onClick={() => loginWithGoogle()}
               style={{ marginTop: 'var(--spacing-md)' }}
+              disabled={!isOnline}
             >
+              {!isOnline && <FiWifiOff className="icon-left" />}
               Sign In with Google
+              {!isOnline && <span className="offline-note">Not available offline</span>}
             </button>
           </>
         )}
@@ -141,10 +145,12 @@ const MePage = () => {
       {user && (
         <div className="account-section">
           <button 
-            className="button-outline danger full-width"
+            className={`button-outline danger full-width ${!isOnline ? 'disabled' : ''}`}
             onClick={() => logout()}
+            disabled={!isOnline}
           >
             <FiLogOut /> Sign Out
+            {!isOnline && <span className="offline-note">Not available offline</span>}
           </button>
         </div>
       )}

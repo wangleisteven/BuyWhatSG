@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Custom hook to persist state in local storage
- * @param key The key to store the value under in localStorage
+ * Custom hook to persist state in local storage with support for authenticated and non-authenticated states
+ * @param key The base key to store the value under in localStorage
  * @param initialValue The initial value to use if no value is found in localStorage
+ * @param isAuthenticated Whether the user is authenticated
+ * @param userId Optional user ID for authenticated users
  * @returns [storedValue, setValue] - A stateful value and a function to update it
  */
 export function useLocalStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
+  isAuthenticated: boolean = false,
+  userId?: string
 ): [T, (value: T | ((val: T) => T)) => void] {
-  // Get from local storage then parse stored json or return initialValue
+  // Determine the actual storage key based on authentication state
+  const storageKey = isAuthenticated && userId 
+    ? `${key}_auth_${userId}` // Authenticated user-specific storage
+    : `${key}_guest`; // Non-authenticated user storage
+
+  // Get from local storage then parse json or return initialValue
   const readValue = (): T => {
     // Prevent build error "window is undefined" but keep working
     if (typeof window === 'undefined') {
@@ -18,16 +27,21 @@ export function useLocalStorage<T>(
     }
 
     try {
-      const item = window.localStorage.getItem(key);
+      const item = window.localStorage.getItem(storageKey);
       return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      console.warn(`Error reading localStorage key "${storageKey}":`, error);
       return initialValue;
     }
   };
 
   // State to store our value
   const [storedValue, setStoredValue] = useState<T>(readValue);
+
+  // Update stored value when authentication state changes
+  useEffect(() => {
+    setStoredValue(readValue());
+  }, [isAuthenticated, userId]);
 
   // Return a wrapped version of useState's setter function that persists the new value to localStorage
   const setValue = (value: T | ((val: T) => T)) => {
@@ -41,24 +55,24 @@ export function useLocalStorage<T>(
 
       // Save to local storage
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        window.localStorage.setItem(storageKey, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn(`Error setting localStorage key "${storageKey}":`, error);
     }
   };
 
   // Listen for changes to this localStorage key in other tabs/windows
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === key && e.newValue) {
+      if (e.key === storageKey && e.newValue) {
         setStoredValue(JSON.parse(e.newValue) as T);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [key]);
+  }, [storageKey]);
 
   return [storedValue, setValue];
 }

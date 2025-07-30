@@ -13,17 +13,17 @@ type AppProviderProps = {
 export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <NotificationProvider>
             <AlertProvider>
               <ShoppingListProvider>
                 {children}
               </ShoppingListProvider>
             </AlertProvider>
-          </ToastProvider>
-        </NotificationProvider>
-      </AuthProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 };
