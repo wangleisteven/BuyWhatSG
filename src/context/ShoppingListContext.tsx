@@ -54,7 +54,7 @@ const createEducationList = (): ShoppingList => {
         name: '👈 Tap here to check off this item',
         quantity: 1,
         completed: false,
-        category: 'default',
+        category: 'general',
         position: 0
       },
       {
@@ -62,7 +62,7 @@ const createEducationList = (): ShoppingList => {
         name: 'Swipe the item to the left 🫲 to delete the item',
         quantity: 1,
         completed: false,
-        category: 'default',
+        category: 'general',
         position: 1
       },
       {
@@ -70,7 +70,7 @@ const createEducationList = (): ShoppingList => {
         name: 'Tap the item ☝️ to edit name, quantity, even upload the photo',
         quantity: 1,
         completed: false,
-        category: 'default',
+        category: 'general',
         position: 2
       },
       {
@@ -78,7 +78,7 @@ const createEducationList = (): ShoppingList => {
         name: 'Hold and drag 🫳 the item to sort the sequence',
         quantity: 1,
         completed: false,
-        category: 'default',
+        category: 'general',
         position: 3
       }
     ]

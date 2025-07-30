@@ -2,8 +2,9 @@ import { useState } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import { compressImage, getDataUrlSize, isImageFile } from '../../utils/imageUtils';
+import { compressImage, isImageFile } from '../../utils/imageUtils';
 import Toast from '../ui/Toast';
+import CategoryDropdown from '../ui/CategoryDropdown';
 import './Items.css';
 
 type AddItemFormProps = {
@@ -15,25 +16,14 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const { addItem } = useShoppingList();
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [category, setCategory] = useState('default');
+  const [category, setCategory] = useState('general');
   const [photoURL, setPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
   // Common categories for shopping items
-  const categories = [
-    { id: 'default', name: 'General' },
-    { id: 'produce', name: 'Produce' },
-    { id: 'dairy', name: 'Dairy' },
-    { id: 'meat', name: 'Meat' },
-    { id: 'bakery', name: 'Bakery' },
-    { id: 'frozen', name: 'Frozen' },
-    { id: 'pantry', name: 'Pantry' },
-    { id: 'beverages', name: 'Beverages' },
-    { id: 'household', name: 'Household' },
-    { id: 'personal', name: 'Personal Care' },
-  ];
+
   
   // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
@@ -53,7 +43,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
       // Reset form
       setName('');
       setQuantity(1);
-      setCategory('default');
+      setCategory('general');
       
       // Close form
       onClose();
@@ -198,18 +188,12 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="item-category">Category</label>
-            <select
-              id="item-category"
+            <label htmlFor="category">Category</label>
+            <CategoryDropdown
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+              placeholder="Select a category"
+            />
           </div>
           
           <div className="form-actions">

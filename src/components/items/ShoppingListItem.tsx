@@ -1,4 +1,4 @@
-import { FiTrash2, FiEdit2 } from 'react-icons/fi';
+import { FiTrash2 } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import { useSwipe } from '../../hooks/useSwipe';

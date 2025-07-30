@@ -3,8 +3,9 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
-import { compressImage, getDataUrlSize, isImageFile } from '../../utils/imageUtils';
+import { compressImage, isImageFile } from '../../utils/imageUtils';
 import Toast from '../ui/Toast';
+import CategoryDropdown from '../ui/CategoryDropdown';
 import './Items.css';
 
 type EditItemModalProps = {
@@ -24,18 +25,7 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   const [errorMessage, setErrorMessage] = useState('');
   
   // Common categories for shopping items
-  const categories = [
-    { id: 'default', name: 'General' },
-    { id: 'produce', name: 'Produce' },
-    { id: 'dairy', name: 'Dairy' },
-    { id: 'meat', name: 'Meat' },
-    { id: 'bakery', name: 'Bakery' },
-    { id: 'frozen', name: 'Frozen' },
-    { id: 'pantry', name: 'Pantry' },
-    { id: 'beverages', name: 'Beverages' },
-    { id: 'household', name: 'Household' },
-    { id: 'personal', name: 'Personal Care' },
-  ];
+
   
   // Update state when item changes
   useEffect(() => {
@@ -216,17 +206,11 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
           
           <div className="form-group">
             <label htmlFor="edit-item-category">Category</label>
-            <select
-              id="edit-item-category"
+            <CategoryDropdown
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+              placeholder="Select a category"
+            />
           </div>
           
           <div className="form-actions">

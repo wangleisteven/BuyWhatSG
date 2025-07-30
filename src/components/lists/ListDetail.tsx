@@ -7,6 +7,7 @@ import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
 import Toast from '../ui/Toast';
+import { categories, getCategoryName } from '../../config/categories';
 import './ListDetail.css';
 
 
@@ -83,8 +84,8 @@ const ListDetail = () => {
         'pantry', 'beverages', 'household', 'personal', 'default'
       ];
       
-      const aCategoryIndex = categoryOrder.indexOf(a.category || 'default');
-      const bCategoryIndex = categoryOrder.indexOf(b.category || 'default');
+      const aCategoryIndex = categoryOrder.indexOf(a.category || 'general');
+    const bCategoryIndex = categoryOrder.indexOf(b.category || 'general');
       
       if (aCategoryIndex !== bCategoryIndex) {
         return aCategoryIndex - bCategoryIndex;
@@ -102,23 +103,7 @@ const ListDetail = () => {
   const completedItems = sortedItems.filter(item => item.completed);
   
   // Group uncompleted items by category
-  const categoryOrder = [
-    'produce', 'dairy', 'meat', 'bakery', 'frozen', 
-    'pantry', 'beverages', 'household', 'personal', 'default'
-  ];
-  
-  const categoryNames: { [key: string]: string } = {
-    'produce': 'Produce',
-    'dairy': 'Dairy',
-    'meat': 'Meat',
-    'bakery': 'Bakery',
-    'frozen': 'Frozen',
-    'pantry': 'Pantry',
-    'beverages': 'Beverages',
-    'household': 'Household',
-    'personal': 'Personal Care',
-    'default': 'General'
-  };
+  const categoryOrder = categories.map(cat => cat.id);
   
   const groupedItems = categoryOrder.reduce((acc, categoryId) => {
     const categoryItems = uncompletedItems.filter(item => item.category === categoryId);
@@ -158,7 +143,7 @@ const ListDetail = () => {
             {/* Uncompleted items grouped by category */}
             {Object.entries(groupedItems).map(([categoryId, categoryItems]) => (
               <div key={categoryId} className="category-group">
-                <h4 className="category-heading">{categoryNames[categoryId]}</h4>
+                <h4 className="category-heading">{getCategoryName(categoryId)}</h4>
                 {categoryItems.map((item) => (
                   <ShoppingListItem
                     key={item.id}
