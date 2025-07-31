@@ -59,7 +59,7 @@ const createEducationList = (): ShoppingList => {
       },
       {
         id: generateId(),
-        name: 'Swipe the item to the left 🫲 to delete the item',
+        name: 'Tap the item ☝️ to edit name, quantity, even upload the photo',
         quantity: 1,
         completed: false,
         category: 'general',
@@ -67,19 +67,11 @@ const createEducationList = (): ShoppingList => {
       },
       {
         id: generateId(),
-        name: 'Tap the item ☝️ to edit name, quantity, even upload the photo',
+        name: 'Swipe the item to the left 🫲 to delete the item',
         quantity: 1,
         completed: false,
         category: 'general',
         position: 2
-      },
-      {
-        id: generateId(),
-        name: 'Hold and drag 🫳 the item to sort the sequence',
-        quantity: 1,
-        completed: false,
-        category: 'general',
-        position: 3
       }
     ]
   };
@@ -261,60 +253,55 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         // User is logged in
         setIsLoadingData(true);
         try {
-          // First, check if user already has lists in Firebase
-          let userHasExistingLists = false;
-          try {
-            const existingLists = await getUserLists(user.id);
-            userHasExistingLists = existingLists.length > 0;
-            console.log(`User has existing lists: ${userHasExistingLists}`);
-          } catch (checkError) {
-            console.warn('Error checking for existing user lists:', checkError);
-          }
-          
-          // Only sync guest lists if this is a first-time user (no existing lists)
-          if (!userHasExistingLists) {
-            const guestLists = getGuestData();
-            const listsToSync = guestLists.filter((list: ShoppingList) => list.id !== 'education-list');
-            
-            if (listsToSync.length > 0) {
-              try {
-                // Copy guest data to authenticated storage
-                copyGuestDataToAuth();
-                // Sync to Firebase
-                await syncLocalListsToFirestore(listsToSync, user.id);
-                console.log('Successfully synced guest lists to Firebase for new user');
-              } catch (syncError) {
-                console.warn('Error syncing guest lists to Firebase:', syncError);
-                // Even if Firebase sync fails, we still copied the data locally
-              }
-            } else {
-              // No guest lists to sync, but still copy any guest data
-              copyGuestDataToAuth();
-            }
-          }
-          
-          // Load user's lists from Firebase
+          // Load user's lists from Firebase to check if this is a first-time user
           let firebaseLists: ShoppingList[] = [];
+          let isFirstTimeUser = false;
+          
           try {
             firebaseLists = await getUserLists(user.id);
-            console.log(`Loaded ${firebaseLists.length} lists from Firebase`);
+            isFirstTimeUser = firebaseLists.length === 0;
+            console.log(`User is first-time: ${isFirstTimeUser}, Firebase lists: ${firebaseLists.length}`);
           } catch (getUserError) {
             console.warn('Error loading user lists from Firebase:', getUserError);
-            // For first-time users or permission issues, continue with empty lists
+            // Assume first-time user if we can't load lists
+            isFirstTimeUser = true;
             try {
               await new Promise(resolve => setTimeout(resolve, 1000));
               firebaseLists = await getUserLists(user.id);
-              console.log(`Retry: Loaded ${firebaseLists.length} lists from Firebase`);
+              isFirstTimeUser = firebaseLists.length === 0;
+              console.log(`Retry: User is first-time: ${isFirstTimeUser}, Firebase lists: ${firebaseLists.length}`);
             } catch (retryError) {
-              console.warn('Retry failed, continuing with empty lists:', retryError);
+              console.warn('Retry failed, assuming first-time user:', retryError);
+              isFirstTimeUser = true;
             }
           }
           
-          // Always include education list
-          const educationList = createEducationList();
-          
-          // Set the lists - our enhanced useLocalStorage hook will save to the authenticated user's storage
-          setLists([educationList, ...firebaseLists]);
+          if (isFirstTimeUser) {
+            // First-time user: sync non-login state lists to Firebase as initialization
+            const guestLists = getGuestData();
+            console.log(`First-time user: syncing ${guestLists.length} guest lists to Firebase`);
+            
+            try {
+              // Copy guest data to authenticated storage
+              copyGuestDataToAuth();
+              // Sync all guest lists (including education list) to Firebase
+              await syncLocalListsToFirestore(guestLists, user.id);
+              console.log('Successfully synced all guest lists to Firebase for first-time user');
+              
+              // Set lists from guest data
+              setLists(guestLists);
+            } catch (syncError) {
+              console.warn('Error syncing guest lists to Firebase:', syncError);
+              // Even if Firebase sync fails, we still copied the data locally
+              setLists(guestLists.length > 0 ? guestLists : [createEducationList()]);
+            }
+          } else {
+            // Returning user: directly pull lists from Firebase
+            console.log(`Returning user: loading ${firebaseLists.length} lists from Firebase`);
+            
+            // Set the lists exactly as they are in Firebase
+            setLists(firebaseLists);
+          }
           
           // Clear current list to refresh
           setCurrentList(null);
@@ -362,8 +349,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
 
   // Create a new shopping list
   const createList = async (name: string): Promise<ShoppingList | null> => {
-    // Check if user is not authenticated and already has a list (besides education list)
-    if (!isAuthenticated && lists.filter(list => list.id !== 'education-list').length > 0) {
+    // Check if user is not authenticated and already has 2 lists (education list + 1 custom)
+    if (!isAuthenticated && lists.filter(list => list.id !== 'education-list').length >= 1) {
       showAlert({
         type: 'info',
         title: 'Create List',
@@ -508,8 +495,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     const listToDuplicate = lists.find(list => list.id === id);
     if (!listToDuplicate) return;
 
-    // Check if user is not authenticated and already has a list (besides education list)
-    if (!isAuthenticated && lists.filter(list => list.id !== 'education-list').length > 0) {
+    // Check if user is not authenticated and already has 2 lists (education list + 1 custom)
+    if (!isAuthenticated && lists.filter(list => list.id !== 'education-list').length >= 1) {
       showAlert({
         type: 'info',
         title: 'Create List',

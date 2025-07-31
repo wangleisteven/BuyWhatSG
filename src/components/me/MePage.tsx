@@ -68,7 +68,11 @@ const MePage = () => {
     <div className="me-page">
       <div className="profile-section">
         <div className="profile-icon">
-          <FiUser size={40} />
+          {user && user.photoURL ? (
+            <img src={user.photoURL} alt="Profile" />
+          ) : (
+            <FiUser size={40} />
+          )}
         </div>
         {loading ? (
           <div className="loading-indicator">Loading...</div>
@@ -118,20 +122,14 @@ const MePage = () => {
 
 
 
-        {!isPWA && canInstall && (
-          <div className="setting-item">
+        {!isPWA && (
+          <div className="setting-item clickable" onClick={handleInstallClick}>
             <div className="setting-info">
               <span className="setting-icon">
                 <FiDownload />
               </span>
               <span>Install App</span>
             </div>
-            <button 
-              className="button-primary"
-              onClick={handleInstallClick}
-            >
-              Install
-            </button>
           </div>
         )}
       </div>

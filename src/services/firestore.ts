@@ -5,6 +5,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
+  setDoc, 
   query, 
   where, 
   orderBy, 
@@ -116,18 +117,32 @@ export const saveListToFirestore = async (list: ShoppingList, userId: string): P
   try {
     console.log('saveListToFirestore: Saving list', list.name, 'for user:', userId);
     const listData = listToFirestore(list, userId);
-    const docRef = await addDoc(collection(db, LISTS_COLLECTION), listData);
-    console.log('saveListToFirestore: List saved with ID:', docRef.id);
+    
+    let docRef;
+    let documentId: string;
+    
+    // For education list, use its fixed ID as the document ID
+    if (list.id === 'education-list') {
+      const educationDocRef = doc(db, LISTS_COLLECTION, 'education-list');
+      await setDoc(educationDocRef, listData, { merge: true });
+      documentId = 'education-list';
+    } else {
+      // For regular lists, let Firebase generate the ID
+      docRef = await addDoc(collection(db, LISTS_COLLECTION), listData);
+      documentId = docRef.id;
+    }
+    
+    console.log('saveListToFirestore: List saved with ID:', documentId);
     
     // Save items
     console.log('saveListToFirestore: Saving', list.items.length, 'items');
     for (const item of list.items) {
-      const itemData = itemToFirestore(item, docRef.id, userId);
+      const itemData = itemToFirestore(item, documentId, userId);
       await addDoc(collection(db, ITEMS_COLLECTION), itemData);
     }
     console.log('saveListToFirestore: All items saved successfully');
     
-    return docRef.id;
+    return documentId;
   } catch (error) {
     console.error('Error saving list to Firestore:', error);
     throw error;
@@ -308,10 +323,8 @@ export const deleteItemFromFirestore = async (itemId: string, _userId: string): 
 // Sync local lists to Firestore (for when user logs in)
 export const syncLocalListsToFirestore = async (localLists: ShoppingList[], userId: string): Promise<void> => {
   try {
-    // Filter out education list and sync only user-created lists
-    const userLists = localLists.filter(list => list.id !== 'education-list');
-    
-    for (const list of userLists) {
+    // Sync all lists including education list to Firebase
+    for (const list of localLists) {
       await saveListToFirestore(list, userId);
     }
   } catch (error) {

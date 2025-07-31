@@ -71,6 +71,19 @@
   border-bottom: none;
 }
 
+.setting-item.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.setting-item.clickable:hover {
+  background-color: var(--color-background-secondary);
+}
+
+.setting-item.clickable:active {
+  background-color: var(--color-border);
+}
+
 .setting-label {
   display: flex;
   align-items: center;

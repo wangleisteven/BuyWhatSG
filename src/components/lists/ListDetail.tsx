@@ -7,7 +7,7 @@ import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
 import Toast from '../ui/Toast';
-import { categories, getCategoryName } from '../../config/categories';
+import { categories, getCategoryName, getCategoryById } from '../../config/categories';
 import './ListDetail.css';
 
 
@@ -143,7 +143,10 @@ const ListDetail = () => {
             {/* Uncompleted items grouped by category */}
             {Object.entries(groupedItems).map(([categoryId, categoryItems]) => (
               <div key={categoryId} className="category-group">
-                <h4 className="category-heading">{getCategoryName(categoryId)}</h4>
+                <h4 className="category-heading">
+                  <span className="category-heading-icon">{getCategoryById(categoryId)?.icon}</span>
+                  <span className="category-heading-name">{getCategoryName(categoryId)}</span>
+                </h4>
                 {categoryItems.map((item) => (
                   <ShoppingListItem
                     key={item.id}

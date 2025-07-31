@@ -110,6 +110,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   text-align: left;
+  border-radius: 0;
 }
 
 .category-dropdown-option:hover {
@@ -117,7 +118,7 @@
 }
 
 .category-dropdown-option.selected {
-  background-color: var(--color-primary-light);
+  background-color: #4dc27d4a;
   color: var(--color-primary);
 }
 

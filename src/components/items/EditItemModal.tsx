@@ -4,8 +4,9 @@ import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import { compressImage, isImageFile } from '../../utils/imageUtils';
+import { recommendCategory } from '../../utils/categoryRecommendation';
 import Toast from '../ui/Toast';
-import CategoryDropdown from '../ui/CategoryDropdown';
+import CategoryTags from '../ui/CategoryTags';
 import './Items.css';
 
 type EditItemModalProps = {
@@ -24,7 +25,13 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
-  // Common categories for shopping items
+  // Handle auto-recommendation when item name loses focus
+  const handleItemNameBlur = () => {
+    if (name.trim()) {
+      const recommendedCategory = recommendCategory(name.trim());
+      setCategory(recommendedCategory);
+    }
+  };
 
   
   // Update state when item changes
@@ -176,6 +183,7 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={handleItemNameBlur}
               placeholder="Enter item name"
               required
             />
@@ -205,11 +213,10 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="edit-item-category">Category</label>
-            <CategoryDropdown
+            <label>Category</label>
+            <CategoryTags
               value={category}
               onChange={setCategory}
-              placeholder="Select a category"
             />
           </div>
           

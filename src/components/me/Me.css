@@ -27,6 +27,14 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--spacing-md);
+  overflow: hidden;
+}
+
+.profile-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .profile-section h2 {

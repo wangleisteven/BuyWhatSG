@@ -3,8 +3,9 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { compressImage, isImageFile } from '../../utils/imageUtils';
+import { recommendCategory } from '../../utils/categoryRecommendation';
 import Toast from '../ui/Toast';
-import CategoryDropdown from '../ui/CategoryDropdown';
+import CategoryTags from '../ui/CategoryTags';
 import './Items.css';
 
 type AddItemFormProps = {
@@ -22,7 +23,13 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
-  // Common categories for shopping items
+  // Handle auto-recommendation when item name loses focus
+  const handleItemNameBlur = () => {
+    if (name.trim()) {
+      const recommendedCategory = recommendCategory(name.trim());
+      setCategory(recommendedCategory);
+    }
+  };
 
   
   // Handle form submission
@@ -158,6 +165,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onBlur={handleItemNameBlur}
                   placeholder="Enter item name"
                   autoFocus
                   required
@@ -188,11 +196,10 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="category">Category</label>
-            <CategoryDropdown
+            <label>Category</label>
+            <CategoryTags
               value={category}
               onChange={setCategory}
-              placeholder="Select a category"
             />
           </div>
           

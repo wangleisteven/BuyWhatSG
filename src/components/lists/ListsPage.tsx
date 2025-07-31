@@ -144,7 +144,6 @@ const ListsPage = () => {
           ) : (
             sortedLists.map(list => {
               const { total, completed } = getListStats(list.id);
-              const isEducationList = list.id === 'education-list';
               
               return (
                 <div 
@@ -176,35 +175,31 @@ const ListsPage = () => {
                       <FiCopy size={28} />
                     </button>
                     
-                    {!isEducationList && (
-                      <>
-                        {showArchived ? (
-                          <button 
-                            className="button-icon-small"
-                            onClick={(e) => handleUnarchiveList(e, list.id)}
-                            aria-label="Unarchive list"
-                          >
-                            <FiRotateCcw size={28} />
-                          </button>
-                        ) : (
-                          <button 
-                            className="button-icon-small"
-                            onClick={(e) => handleArchiveList(e, list.id)}
-                            aria-label="Archive list"
-                          >
-                            <FiArchive size={28} />
-                          </button>
-                        )}
-                        
-                        <button 
-                          className="button-icon-small danger"
-                          onClick={(e) => handleDeleteList(e, list.id)}
-                          aria-label="Delete list"
-                        >
-                          <FiTrash2 size={28} />
-                        </button>
-                      </>
+                    {showArchived ? (
+                      <button 
+                        className="button-icon-small"
+                        onClick={(e) => handleUnarchiveList(e, list.id)}
+                        aria-label="Unarchive list"
+                      >
+                        <FiRotateCcw size={28} />
+                      </button>
+                    ) : (
+                      <button 
+                        className="button-icon-small"
+                        onClick={(e) => handleArchiveList(e, list.id)}
+                        aria-label="Archive list"
+                      >
+                        <FiArchive size={28} />
+                      </button>
                     )}
+                    
+                    <button 
+                      className="button-icon-small danger"
+                      onClick={(e) => handleDeleteList(e, list.id)}
+                      aria-label="Delete list"
+                    >
+                      <FiTrash2 size={28} />
+                    </button>
                   </div>
                 </div>
               );

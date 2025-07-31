@@ -1,9 +1,13 @@
-import { 
-  FiUser, FiShoppingBag, FiHeart, FiDroplet, FiCoffee, 
-  FiCloud, FiCircle, FiShield, FiTool, 
-  FiSquare, FiHexagon, FiGrid, FiGift, FiStar, FiList,
-  FiBox, FiTv
-} from 'react-icons/fi';
+import { FiList } from 'react-icons/fi';
+import { FaBaby, FaWineGlassAlt } from "react-icons/fa";
+import { GiFruitBowl, GiMilkCarton, GiMeat, GiSlicedBread, GiStrong } from "react-icons/gi";
+import { IoIosIceCream } from "react-icons/io";
+import { RiDrinksFill } from "react-icons/ri";
+import { FaCookie, FaBowlRice, FaSuitcaseRolling } from "react-icons/fa6";
+import { PiPaintBrushHouseholdFill } from "react-icons/pi";
+import { MdFaceRetouchingNatural, MdPets } from "react-icons/md";
+import { HiTv } from "react-icons/hi2";
+
 import type { ReactNode } from 'react';
 
 export interface Category {
@@ -14,22 +18,22 @@ export interface Category {
 
 export const categories: Category[] = [
   { id: 'general', name: 'General', icon: <FiList /> },
-  { id: 'produce', name: 'Fruits & Vegetables', icon: <FiCircle /> },
-  { id: 'dairy', name: 'Dairy, Chilled & Eggs', icon: <FiBox /> },
-  { id: 'meat', name: 'Meat & Seafood', icon: <FiSquare /> },
-  { id: 'bakery', name: 'Bakery', icon: <FiShoppingBag /> },
-  { id: 'frozen', name: 'Frozen', icon: <FiCloud /> },
-  { id: 'drinks', name: 'Drinks', icon: <FiCoffee /> },
-  { id: 'alcohol', name: 'Beer, Wine & Spirits', icon: <FiDroplet /> },
-  { id: 'snacks', name: 'Snacks & Confectionery', icon: <FiGift /> },
-  { id: 'household', name: 'Household', icon: <FiTool /> },
-  { id: 'beauty', name: 'Beauty & Personal Care', icon: <FiHeart /> },
-  { id: 'health', name: 'Health & Wellness', icon: <FiShield /> },
-  { id: 'baby', name: 'Baby, Child & Toys', icon: <FiUser /> },
-  { id: 'pet', name: 'Pet Supplies', icon: <FiHexagon /> },
-  { id: 'electronics', name: 'Electronics', icon: <FiTv /> },
-  { id: 'lifestyle', name: 'Lifestyle', icon: <FiStar /> },
-  { id: 'rice', name: 'Rice, Noodles & Ingredients', icon: <FiGrid /> },
+  { id: 'baby', name: 'Baby, Child & Toys', icon: <FaBaby /> },
+  { id: 'produce', name: 'Fruits & Vegetables', icon: <GiFruitBowl /> },
+  { id: 'dairy', name: 'Dairy, Chilled & Eggs', icon: <GiMilkCarton /> },
+  { id: 'meat', name: 'Meat & Seafood', icon: <GiMeat /> },
+  { id: 'bakery', name: 'Bakery & Fast Food', icon: <GiSlicedBread /> },
+  { id: 'rice', name: 'Rice, Noodles & Ingredients', icon: <FaBowlRice /> },
+  { id: 'snacks', name: 'Snacks & Confectionery', icon: <FaCookie /> },
+  { id: 'frozen', name: 'Frozen', icon: <IoIosIceCream /> },
+  { id: 'drinks', name: 'Drinks', icon: <RiDrinksFill /> },
+  { id: 'alcohol', name: 'Beer, Wine & Spirits', icon: <FaWineGlassAlt /> },
+  { id: 'beauty', name: 'Beauty & Personal Care', icon: <MdFaceRetouchingNatural /> },
+  { id: 'lifestyle', name: 'Lifestyle', icon: <FaSuitcaseRolling /> },
+  { id: 'health', name: 'Health & Wellness', icon: <GiStrong /> },
+  { id: 'household', name: 'Household', icon: <PiPaintBrushHouseholdFill /> },
+  { id: 'electronics', name: 'Electronics', icon: <HiTv /> },
+  { id: 'pet', name: 'Pet Supplies', icon: <MdPets /> },
 ];
 
 // Helper function to get category by id
@@ -41,25 +45,4 @@ export const getCategoryById = (id: string): Category | undefined => {
 export const getCategoryName = (id: string): string => {
   const category = getCategoryById(id);
   return category ? category.name : 'General';
-};
-
-// Legacy category mapping for backward compatibility
-export const legacyCategoryMap: { [key: string]: string } = {
-  'default': 'general',
-  'produce': 'produce',
-  'dairy': 'dairy',
-  'meat': 'meat',
-  'bakery': 'bakery',
-  'frozen': 'frozen',
-  'pantry': 'general',
-  'cupboard': 'general',
-  'housebrand': 'general',
-  'beverages': 'drinks',
-  'household': 'household',
-  'personal': 'beauty'
-};
-
-// Helper function to migrate old category IDs to new ones
-export const migrateCategoryId = (oldId: string): string => {
-  return legacyCategoryMap[oldId] || oldId;
 };

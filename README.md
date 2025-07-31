@@ -6,7 +6,6 @@ A Progressive Web App (PWA) for managing shopping lists, built with React, TypeS
 
 - Create, edit, and manage multiple shopping lists
 - Add, edit, and delete items within lists
-- Drag and drop to reorder items
 - Mark items as completed
 - Categorize items for better organization
 - Dark mode support
