@@ -20,7 +20,7 @@ type ExtractedItem = {
 };
 
 const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
-  const { addItem } = useShoppingList();
+  const { addItems } = useShoppingList();
   const { addToast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -61,7 +61,7 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
       return geminiItems.map(item => ({
         name: item.name,
         quantity: item.quantity,
-        category: item.category
+        category: recommendCategory(item.name)
       }));
     } catch (error) {
       console.error('Gemini parsing failed, falling back to basic parsing:', error);
@@ -162,16 +162,15 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
         return;
       }
 
-      // Add all items to the list
-      for (const item of extractedItems) {
-        await addItem(listId, {
+      // Add all items to the shopping list in batch
+        const itemsToAdd = extractedItems.map(item => ({
           name: item.name,
           quantity: item.quantity,
           category: item.category,
-          completed: false,
-          photoURL: ''
-        });
-      }
+          completed: false
+        }));
+        
+        await addItems(listId, itemsToAdd);
 
       setIsAnalyzing(false);
       addToast({
@@ -179,10 +178,8 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
         type: 'success'
       });
       
-      // Close modal after showing success
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      // Close modal immediately after success
+      onClose();
 
     } catch (error) {
       console.error('Error processing image:', error);
@@ -240,10 +237,19 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
               
               <div className="import-tips">
                 <h5>Tips for better results:</h5>
+                <div className="sample-image-container">
+                  <img 
+                    src="/src/assets/shopping_list_sample.jpg" 
+                    alt="Example of a good quality shopping list photo"
+                    className="sample-image"
+                  />
+                  <p className="sample-caption">Example of a clear, readable shopping list</p>
+                </div>
                 <ul>
-                  <li>Use clear, well-lit photos</li>
+                  <li>Use clear, well-lit photo showing the shopping list</li>
                   <li>Ensure text is readable and not blurry</li>
                   <li>Include quantities when possible (e.g., "2 apples")</li>
+                  <li>Hold camera steady to avoid motion blur</li>
                 </ul>
               </div>
             </div>

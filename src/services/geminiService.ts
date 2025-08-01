@@ -1,7 +1,8 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 interface GeminiItem {
   name: string;
   quantity: number;
-  category: string;
 }
 
 interface GeminiResponse {
@@ -9,69 +10,60 @@ interface GeminiResponse {
 }
 
 class GeminiService {
-  private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  private genAI: GoogleGenerativeAI;
+  private model: any;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   }
 
   async parseItemsFromText(text: string): Promise<GeminiItem[]> {
     const prompt = `
-You are a shopping list assistant. Parse the following text and extract shopping items with their quantities and categories.
+Analyze this text and extract grocery/shopping items with their quantities:
 
-Text to parse:
 "${text}"
 
 Please return a JSON response with an array of items. Each item should have:
 - name: the item name (cleaned and standardized)
 - quantity: the quantity as a number (default to 1 if not specified)
-- category: the most appropriate category from these options: "Produce", "Meat", "Dairy", "Bakery", "Pantry", "Frozen", "Beverages", "Snacks", "Health", "Household", "Other"
 
 Rules:
 1. Extract only actual food/grocery items
 2. Ignore non-grocery items like "shopping list", "grocery store", etc.
-3. Convert units to simple quantities (e.g., "1kg rice" becomes quantity: 1, name: "rice")
-4. Standardize item names (e.g., "apples" not "red apples from store")
+3. Convert units to simple quantities (e.g., "1kg rice" becomes quantity: 1, name: "rice"). Do not mistakenly take the serial number as quantity.
+4. Standardize item names (e.g., "red apple" not "red apples from store")
 5. If quantity is unclear, default to 1
 6. Return only valid JSON in this exact format:
 
 {
   "items": [
-    {"name": "apples", "quantity": 2, "category": "Produce"},
-    {"name": "milk", "quantity": 1, "category": "Dairy"}
+    {"name": "apples", "quantity": 2},
+    {"name": "milk", "quantity": 1}
   ]
 }
 `;
 
     try {
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const generatedText = response.text();
       
       if (!generatedText) {
         throw new Error('No response from Gemini API');
       }
 
-      // Extract JSON from the response
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      // Extract JSON from the response (handle markdown code blocks)
+      let jsonText = generatedText;
+      
+      // Remove markdown code blocks if present
+      const codeBlockMatch = generatedText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1].trim();
+      }
+      
+      // Extract JSON object
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No valid JSON found in Gemini response');
       }

@@ -41,9 +41,15 @@ const Header = () => {
 
   // Handle list title update
   const handleUpdateTitle = () => {
-    if (!currentList || newTitle.trim() === '') return;
+    if (!currentList || newTitle.trim() === '') {
+      setIsEditingTitle(false);
+      return;
+    }
     
-    updateList(currentList.id, { name: newTitle.trim() });
+    // Only update if the title actually changed
+    if (newTitle.trim() !== currentList.name) {
+      updateList(currentList.id, { name: newTitle.trim() });
+    }
     setIsEditingTitle(false);
   };
 

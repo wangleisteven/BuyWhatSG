@@ -3,7 +3,7 @@
 
 export const API_CONFIG = {
   // Google Gemini API Key - Replace with your actual key
-  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyDrgcp8m9wshDxJ3y3rBBPpBlHhtHITMls',
+  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || '',
   GEMINI_MODEL: 'gemini-2.0-flash',
   
   // OpenAI API Key - Replace with your actual key  

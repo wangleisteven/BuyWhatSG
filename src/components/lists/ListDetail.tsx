@@ -33,7 +33,7 @@ const ListDetail = () => {
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
   
-  // Find the list by ID
+  // Find the list by ID and update currentList when lists change
   useEffect(() => {
     if (!listId) {
       navigate('/lists');

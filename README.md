@@ -48,7 +48,32 @@ npm install
 yarn install
 ```
 
-3. Start the development server
+3. Configure API Keys (Optional)
+
+For enhanced features like AI-powered photo import and voice recognition, configure the following API keys:
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+```
+
+Then edit `.env` and add your API keys:
+
+```env
+# Gemini API Key for AI-powered photo text extraction
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# OpenAI API Key for voice recognition features
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+```
+
+**Getting API Keys:**
+- **Gemini API**: Get your free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- **OpenAI API**: Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+
+**Note**: These API keys are optional. The app will work without them, but some advanced features like AI photo parsing and voice input will not be available.
+
+4. Start the development server
 
 ```bash
 npm run dev
