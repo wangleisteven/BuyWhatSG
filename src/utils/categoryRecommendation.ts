@@ -80,13 +80,37 @@ function getBigrams(str: string): string[] {
 function getSemanticMatch(itemName: string): string | null {
   const normalizedItem = itemName.toLowerCase().trim();
   
+  // Special handling for baby items - check baby-specific patterns first
+  if (/\b(baby|infant|newborn|toddler|child)\s+/.test(normalizedItem)) {
+    // Check if it's a baby-specific item
+    if (/\b(baby|infant|newborn|toddler|child)\s+(chair|shoe|shoes|hat|jacket|clothes|shirt|dress|pants|shorts|socks|mittens|gloves|bib|bottle|formula|food|cereal|toy|blanket)\b/.test(normalizedItem)) {
+      return 'baby';
+    }
+  }
+  
+  // Special handling for health items - check health-specific patterns before general mappings
+  if (/\b(pill|pills|medicine|medication|tablet|tablets|capsule|capsules|drug|drugs|vitamin|vitamins|supplement|supplements|painkiller|pain\s*relief|aspirin|panadol|ibuprofen|paracetamol|acetaminophen|antibiotic|antibiotics|antacid|antacids|laxative|laxatives|cough\s*syrup|cold\s*medicine|flu\s*medicine|thermometer|bandage|bandages|plaster|plasters|antiseptic|ointment|nasal\s*spray|inhaler|multivitamin|fish\s*oil|omega\s*3|calcium|iron\s*supplement|zinc|magnesium|probiotics|protein\s*powder|sleeping\s*pill|sleep\s*aid|melatonin|allergy\s*medicine|antihistamine|decongestant|expectorant|medical|pharmaceutical|therapeutic|prescription|otc|over\s*the\s*counter|first\s*aid)\b/.test(normalizedItem)) {
+    return 'health';
+  }
+  
   // First check direct mapping
   if (ITEM_CATEGORY_MAPPING[normalizedItem]) {
     return ITEM_CATEGORY_MAPPING[normalizedItem];
   }
   
-  // Check for partial matches in the mapping
+  // Check for partial matches in the mapping, but be careful with health items
   for (const [key, categoryId] of Object.entries(ITEM_CATEGORY_MAPPING)) {
+    // Skip partial matches that might conflict with health items
+    if (categoryId === 'household' && (normalizedItem.includes('tablet') || normalizedItem.includes('capsule'))) {
+      continue;
+    }
+    if (categoryId === 'lifestyle' && normalizedItem.includes('capsule')) {
+      continue;
+    }
+    if (categoryId === 'drinks' && normalizedItem.includes('medicine')) {
+      continue;
+    }
+    
     if (normalizedItem.includes(key) || key.includes(normalizedItem)) {
       return categoryId;
     }
@@ -188,13 +212,31 @@ function getLLMStyleRecommendation(itemName: string): string {
   // Context-sensitive categorization - check for baby items first
   if (/\b(baby|infant|newborn|toddler|child)\s+/.test(lowerItem)) {
     // Baby-specific items override general categories
-    if (/\b(baby|infant|newborn|toddler|child)\s+(shoe|hat|jacket|clothes|shirt|dress|pants|shorts|socks|mittens|gloves|bib|bottle|formula|food|cereal|toy|blanket)\b/.test(lowerItem)) {
+    if (/\b(baby|infant|newborn|toddler|child)\s+(shoe|hat|jacket|clothes|shirt|dress|pants|shorts|socks|mittens|gloves|bib|bottle|formula|food|cereal|toy|blanket|chair)\b/.test(lowerItem)) {
       return 'baby';
     }
   }
   
+  // Handle adult-specific items that should go to lifestyle
+  if (/\b(adult|men|women|man|woman|mens|womens)\s+(shoe|shoes|clothing|clothes|apparel)\b/.test(lowerItem)) {
+    return 'lifestyle';
+  }
+  
   // Pattern-based categorization using semantic understanding
   const patterns = [
+    // Baby items (check first to override general categories)
+    { pattern: /\b(baby|infant|child|kid|toddler|newborn|formula|diaper|nappy|wipes|powder|bottle|pacifier|dummy|teether)\b/, category: 'baby' },
+    { pattern: /\b(toy|rattle|stroller|pram|car\s*seat|high\s*chair|baby\s*chair|gate|monitor|crib|cot|mattress|blanket|swaddle|bib|carrier|sling)\b/, category: 'baby' },
+    
+    // Health & Wellness items (high priority)
+    { pattern: /\b(pill|pills|medicine|medication|tablet|tablets|capsule|capsules|drug|drugs)\b/, category: 'health' },
+    { pattern: /\b(vitamin|vitamins|supplement|supplements|painkiller|pain\s*relief|aspirin|panadol|ibuprofen|paracetamol|acetaminophen)\b/, category: 'health' },
+    { pattern: /\b(antibiotic|antibiotics|antacid|antacids|laxative|laxatives|cough\s*syrup|cold\s*medicine|flu\s*medicine)\b/, category: 'health' },
+    { pattern: /\b(thermometer|bandage|bandages|plaster|plasters|antiseptic|ointment|nasal\s*spray|inhaler)\b/, category: 'health' },
+    { pattern: /\b(multivitamin|fish\s*oil|omega\s*3|calcium|iron\s*supplement|zinc|magnesium|probiotics|protein\s*powder)\b/, category: 'health' },
+    { pattern: /\b(sleeping\s*pill|sleep\s*aid|melatonin|allergy\s*medicine|antihistamine|decongestant|expectorant)\b/, category: 'health' },
+    { pattern: /\b(medical|pharmaceutical|therapeutic|prescription|otc|over\s*the\s*counter|first\s*aid)\b/, category: 'health' },
+    
     // Singapore-specific beverages
     { pattern: /\b(kopi|teh|milo|horlicks|ovaltine|bandung|yuan\s*yang|michael\s*jackson|neslo|clementi)\b/, category: 'drinks' },
     { pattern: /\b(teh\s*tarik|kopi\s*tarik|milo\s*dinosaur|milo\s*godzilla|teh\s*cino|milo\s*cino)\b/, category: 'drinks' },
@@ -237,16 +279,13 @@ function getLLMStyleRecommendation(itemName: string): string {
     { pattern: /\b(clean|household|detergent|bleach|disinfectant|sanitizer|cleaner|dishwashing|fabric\s*softener)\b/, category: 'household' },
     { pattern: /\b(paper|tissue|towel|napkin|toilet\s*paper|paper\s*towel|air\s*freshener|insecticide|mosquito)\b/, category: 'household' },
     { pattern: /\b(trash|garbage|foil|wrap|candle|battery|bulb|gloves|sponge|brush|mop|broom|vacuum)\b/, category: 'household' },
+    { pattern: /\b(chair|table|desk|shelf|cabinet|drawer|furniture|sofa|couch|bed|mattress|pillow|cushion|lamp|mirror)\b/, category: 'household' },
     
     // Pantry and dry goods
     { pattern: /\b(dry|canned|packaged|sauce|spice|grain|instant)\b/, category: 'pantry' },
     { pattern: /\b(flour|rice|noodles|pasta|vermicelli|spaghetti|macaroni)\b/, category: 'rice' },
     { pattern: /\b(sugar|salt|oil|vinegar|soy\s*sauce|oyster\s*sauce|sesame\s*oil|fish\s*sauce|hoisin\s*sauce|chili\s*sauce)\b/, category: 'pantry' },
     { pattern: /\b(curry\s*powder|turmeric|coriander|cumin|coconut\s*milk|tamarind|palm\s*sugar|cornstarch|baking)\b/, category: 'pantry' },
-    
-    // Baby items (general patterns)
-    { pattern: /\b(baby|infant|child|kid|toddler|newborn|formula|diaper|nappy|wipes|powder|bottle|pacifier|dummy|teether)\b/, category: 'baby' },
-    { pattern: /\b(toy|rattle|stroller|pram|car\s*seat|high\s*chair|gate|monitor|crib|cot|mattress|blanket|swaddle|bib|carrier|sling)\b/, category: 'baby' },
     
     // Bakery items
     { pattern: /\b(bread|baked|pastry|cake|cookie|muffin|toast|bun|croissant|bagel|loaf|roll|dough)\b/, category: 'bakery' },

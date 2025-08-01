@@ -1,0 +1,85 @@
+/* Add Item Menu Styles */
+.add-item-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+.add-item-menu {
+  position: fixed;
+  bottom: 170px; /* Above the floating add button */
+  right: var(--spacing-lg);
+  background: var(--color-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+  z-index: 1000;
+  min-width: 200px;
+  overflow: hidden;
+  animation: slideUpFade 0.2s ease-out;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.add-item-menu-option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-md);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+.add-item-menu-option:hover {
+  background: var(--color-background-secondary);
+}
+
+.add-item-menu-option:not(:last-child) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.add-item-menu-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .add-item-menu {
+    background: var(--color-surface-dark);
+    border-color: var(--color-border-dark);
+  }
+  
+  .add-item-menu-option {
+    color: var(--color-text-primary-dark);
+  }
+  
+  .add-item-menu-option:hover {
+    background: var(--color-background-secondary-dark);
+  }
+  
+  .add-item-menu-option:not(:last-child) {
+    border-bottom-color: var(--color-border-dark);
+  }
+}

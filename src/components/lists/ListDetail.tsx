@@ -6,6 +6,9 @@ import type { ShoppingItem } from '../../types/shopping';
 import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
+import AddItemMenu from '../items/AddItemMenu';
+import ImportFromPhoto from '../items/ImportFromPhoto';
+import ListenToMe from '../items/ListenToMe';
 import Toast from '../ui/Toast';
 import { categories, getCategoryName, getCategoryById } from '../../config/categories';
 import './ListDetail.css';
@@ -24,6 +27,9 @@ const ListDetail = () => {
   } = useShoppingList();
   
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showImportFromPhoto, setShowImportFromPhoto] = useState(false);
+  const [showListenToMe, setShowListenToMe] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
   
@@ -64,6 +70,30 @@ const ListDetail = () => {
   const handleUndoDelete = () => {
     undoDeleteItem();
     setShowUndoToast(false);
+  };
+
+  // Handle add item menu actions
+  const handleAddButtonClick = () => {
+    setShowAddMenu(true);
+  };
+
+  const handleAddManually = () => {
+    setShowAddMenu(false);
+    setIsAddingItem(true);
+  };
+
+  const handleImportFromPhoto = () => {
+    setShowAddMenu(false);
+    setShowImportFromPhoto(true);
+  };
+
+  const handleListenToMe = () => {
+    setShowAddMenu(false);
+    setShowListenToMe(true);
+  };
+
+  const handleCloseAddMenu = () => {
+    setShowAddMenu(false);
   };
   
   if (!currentList) {
@@ -118,7 +148,7 @@ const ListDetail = () => {
       <div className="list-header">
         <button 
           className="floating-add-button"
-          onClick={() => setIsAddingItem(true)}
+          onClick={handleAddButtonClick}
           aria-label="Add new item"
         >
           <FiPlus size={24} />
@@ -129,6 +159,32 @@ const ListDetail = () => {
         <AddItemForm 
           listId={currentList.id}
           onClose={() => setIsAddingItem(false)}
+        />
+      )}
+
+      {/* Add item menu */}
+      {showAddMenu && (
+        <AddItemMenu
+          onAddManually={handleAddManually}
+          onImportFromPhoto={handleImportFromPhoto}
+          onListenToMe={handleListenToMe}
+          onClose={handleCloseAddMenu}
+        />
+      )}
+
+      {/* Import from photo modal */}
+      {showImportFromPhoto && (
+        <ImportFromPhoto
+          listId={currentList.id}
+          onClose={() => setShowImportFromPhoto(false)}
+        />
+      )}
+
+      {/* Listen to me modal */}
+      {showListenToMe && (
+        <ListenToMe
+          listId={currentList.id}
+          onClose={() => setShowListenToMe(false)}
         />
       )}
       
