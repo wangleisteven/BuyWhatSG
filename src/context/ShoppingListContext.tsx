@@ -102,29 +102,15 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     
     // CRITICAL: Block state changes from useLocalStorage during active operations
     if ((pendingOperations.length > 0 || isProcessingQueue) && caller.includes('useLocalStorage')) {
-      console.log(`[DEBUG] setLists BLOCKED from useLocalStorage - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
       return;
     }
     
     if (typeof newLists === 'function') {
       setListsOriginal(prev => {
         const result = newLists(prev);
-        console.log(`[DEBUG] setLists called from: ${caller}`);
-        console.log(`[DEBUG] setLists: Previous lists count: ${prev.length}`);
-        console.log(`[DEBUG] setLists: New lists count: ${result.length}`);
-        if (prev.length > 0 && result.length > 0) {
-          const prevItems = prev.reduce((sum, list) => sum + list.items.length, 0);
-          const newItems = result.reduce((sum, list) => sum + list.items.length, 0);
-          console.log(`[DEBUG] setLists: Previous total items: ${prevItems}`);
-          console.log(`[DEBUG] setLists: New total items: ${newItems}`);
-        }
         return result;
       });
     } else {
-      console.log(`[DEBUG] setLists called from: ${caller}`);
-      console.log(`[DEBUG] setLists: Setting ${newLists.length} lists`);
-      const totalItems = newLists.reduce((sum, list) => sum + list.items.length, 0);
-      console.log(`[DEBUG] setLists: Total items in new lists: ${totalItems}`);
       setListsOriginal(newLists);
     }
   }, [setListsOriginal, pendingOperations.length, isProcessingQueue]);
@@ -142,24 +128,19 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     if (!isAuthenticated || !user || pendingOperations.length === 0 || isProcessingQueue) return;
     
     setIsProcessingQueue(true);
-    console.log(`[DEBUG] processPendingOperations: Processing ${pendingOperations.length} pending operations`);
     
     // Log current state before processing
     setLists(prevLists => {
-      console.log(`[DEBUG] processPendingOperations: Current lists state before operation:`, prevLists.map(l => ({ id: l.id, itemCount: l.items.length, items: l.items.map(i => i.id) })));
       return prevLists;
     });
     
     try {
       // Take the first operation and process it
       const operation = pendingOperations[0];
-      console.log(`[DEBUG] processPendingOperations: About to execute operation`);
       await operation();
-      console.log(`[DEBUG] processPendingOperations: Operation completed successfully`);
       
       // Log current state after processing
       setLists(prevLists => {
-        console.log(`[DEBUG] processPendingOperations: Current lists state after operation:`, prevLists.map(l => ({ id: l.id, itemCount: l.items.length, items: l.items.map(i => i.id) })));
         return prevLists;
       });
       
@@ -297,18 +278,15 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   // Handle authentication state changes
   useEffect(() => {
     const handleAuthStateChange = async () => {
-      console.log(`[DEBUG] Auth effect: isAuthenticated=${isAuthenticated}, user=${!!user}, loading=${loading}, hasLoadedInitialData=${hasLoadedInitialData}`);
       if (loading) return; // Wait for auth to finish loading
       
       // CRITICAL FIX: Don't reload Firebase data if we have pending operations
       // This prevents overwriting local state with stale Firebase data during active operations
       if (pendingOperations.length > 0 || isProcessingQueue) {
-        console.log(`[DEBUG] Auth effect: SKIPPING reload - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
         return;
       }
       
       if (isAuthenticated && user && !hasLoadedInitialData) {
-        console.log(`[DEBUG] Auth effect: Starting data load for authenticated user`);
         // User is logged in
         setIsLoadingData(true);
         try {
@@ -348,7 +326,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
               console.log('Successfully synced all guest lists to Firebase for first-time user');
               
               // Set lists from guest data
-              console.log(`[DEBUG] Auth effect: Setting lists from guest data (${guestLists.length} lists)`);
               // CRITICAL: Don't overwrite state if we have pending operations
               if (pendingOperations.length === 0 && !isProcessingQueue) {
                 setLists(guestLists);
@@ -358,7 +335,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             } catch (syncError) {
               console.warn('Error syncing guest lists to Firebase:', syncError);
               // Even if Firebase sync fails, we still copied the data locally
-              console.log(`[DEBUG] Auth effect: Setting fallback lists after sync error`);
               // CRITICAL: Don't overwrite state if we have pending operations
               if (pendingOperations.length === 0 && !isProcessingQueue) {
                 setLists(guestLists.length > 0 ? guestLists : [createEducationList()]);
@@ -371,14 +347,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             console.log(`Returning user: loading ${firebaseLists.length} lists from Firebase`);
             
             // Merge Firebase data with current local state to preserve items being processed
-            console.log(`[DEBUG] Auth effect: Merging Firebase data with local state`);
             setLists(prevLists => {
-              console.log(`[DEBUG] Auth effect: Current local lists before merge:`, prevLists.map(l => ({ id: l.id, itemCount: l.items.length })));
-              console.log(`[DEBUG] Auth effect: Firebase lists to merge:`, firebaseLists.map(l => ({ id: l.id, itemCount: l.items.length })));
-              
               // If we have no local lists or they're just the education list, use Firebase data
               if (prevLists.length === 0 || (prevLists.length === 1 && prevLists[0].id === 'education-list')) {
-                console.log(`[DEBUG] Auth effect: Using Firebase data directly`);
                 return firebaseLists;
               }
               
@@ -387,10 +358,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
                 const localList = prevLists.find(list => list.id === firebaseList.id);
                 if (localList && localList.updatedAt > firebaseList.updatedAt) {
                   // Local list is newer, keep local version
-                  console.log(`[DEBUG] Auth effect: Keeping local version of list ${firebaseList.id} (${localList.items.length} items)`);
                   return localList;
                 }
-                console.log(`[DEBUG] Auth effect: Using Firebase version of list ${firebaseList.id} (${firebaseList.items.length} items)`);
                 return firebaseList;
               });
               
@@ -399,7 +368,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
                 !firebaseLists.find(firebaseList => firebaseList.id === localList.id)
               );
               
-              console.log(`[DEBUG] Auth effect: Final merged result: ${mergedLists.length + localOnlyLists.length} lists`);
               return [...mergedLists, ...localOnlyLists];
             });
           }
@@ -690,13 +658,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: Date.now()
     }));
 
-    console.log(`[DEBUG] addItems: Adding ${newItems.length} items to list ${listId}`);
-    console.log(`[DEBUG] addItems: New item IDs:`, newItems.map(i => i.id));
-
     try {
       // Update local state immediately for responsive UI
       setLists(prevLists => {
-        console.log(`[DEBUG] addItems: Before update - List ${listId} has ${prevLists.find(l => l.id === listId)?.items.length || 0} items`);
         const updatedLists = prevLists.map(list => {
           if (list.id === listId) {
             const updatedList = {
@@ -704,7 +668,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
               items: [...newItems, ...list.items],
               updatedAt: Date.now()
             };
-            console.log(`[DEBUG] addItems: After update - List ${listId} now has ${updatedList.items.length} items`);
             return updatedList;
           }
           return list;
@@ -714,37 +677,22 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       
       // Queue Firebase operations if authenticated - batch them into a single operation
       if (isAuthenticated && user) {
-        console.log(`[DEBUG] addItems: Queueing Firebase operation for ${newItems.length} items`);
         queueOperation(async () => {
           // Add a small delay and check state right before execution
           await new Promise(resolve => setTimeout(resolve, 10));
-          console.log(`[DEBUG] Firebase operation: About to start - checking state after 10ms delay`);
-          setLists(prevLists => {
-            const targetList = prevLists.find(l => l.id === listId);
-            console.log(`[DEBUG] Firebase operation: State check - List ${listId} has ${targetList?.items.length || 0} items`);
-            console.log(`[DEBUG] Firebase operation: State check - Item IDs:`, targetList?.items.map(i => i.id) || []);
-            return prevLists;
-          });
-          console.log(`[DEBUG] Firebase operation: Starting batch save for ${newItems.length} items`);
           
-          // Log state at the beginning of Firebase operation
-          setLists(prevLists => {
-            const targetList = prevLists.find(l => l.id === listId);
-            console.log(`[DEBUG] Firebase operation: List ${listId} has ${targetList?.items.length || 0} items at start`);
-            console.log(`[DEBUG] Firebase operation: Item IDs in list:`, targetList?.items.map(i => i.id) || []);
-            return prevLists;
-          });
+          // Check state without triggering re-renders
+          const currentLists = lists;
+          const targetList = currentLists.find(l => l.id === listId);
           
           // Save all items to Firestore and collect their IDs
           const firestoreUpdates: { itemId: string; firestoreId: string }[] = [];
           
           for (const newItem of newItems) {
             try {
-              console.log(`[DEBUG] Firebase operation: Saving item ${newItem.id} to Firestore`);
               const firestoreId = await saveItemToFirestore(newItem, listId, user.id);
               if (firestoreId) {
                 firestoreUpdates.push({ itemId: newItem.id, firestoreId });
-                console.log(`[DEBUG] Firebase operation: Item ${newItem.id} saved with Firestore ID ${firestoreId}`);
               }
             } catch (error) {
               console.error(`Failed to save item ${newItem.id} to Firestore:`, error);
@@ -752,15 +700,10 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          console.log(`[DEBUG] Firebase operation: Completed saving, ${firestoreUpdates.length} items successful`);
           
           // Update all Firestore IDs in a single state update
           if (firestoreUpdates.length > 0) {
-            console.log(`[DEBUG] Firebase operation: Updating Firestore IDs for items:`, firestoreUpdates.map(u => u.itemId));
             setLists(prevLists => {
-              const targetList = prevLists.find(l => l.id === listId);
-              console.log(`[DEBUG] Firebase operation: Before ID update - List ${listId} has ${targetList?.items.length || 0} items`);
-              console.log(`[DEBUG] Firebase operation: Items in list:`, targetList?.items.map(i => i.id) || []);
               
               const updatedLists = prevLists.map(list => {
                 if (list.id === listId) {
@@ -769,7 +712,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
                     return update ? { ...item, firestoreId: update.firestoreId } : item;
                   });
                   
-                  console.log(`[DEBUG] Firebase operation: After ID update - List ${listId} will have ${updatedItems.length} items`);
                   return {
                     ...list,
                     items: updatedItems
@@ -782,7 +724,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             });
           }
           
-          console.log(`[DEBUG] Firebase operation: Batch operation completed`);
         });
       }
     } catch (error) {

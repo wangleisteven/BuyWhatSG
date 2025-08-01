@@ -40,20 +40,13 @@ export function useLocalStorage<T>(
 
   // Update stored value when authentication state changes
   useEffect(() => {
-    console.log(`[DEBUG] useLocalStorage effect: key=${key}, isAuthenticated=${isAuthenticated}, userId=${userId}, storageKey=${storageKey}`);
     
     // Save current state to the new storage key before switching
-    const currentValue = storedValue;
     const newValue = readValue();
     
-    console.log(`[DEBUG] useLocalStorage effect: currentValue length=${Array.isArray(currentValue) ? currentValue.length : 'not array'}, newValue length=${Array.isArray(newValue) ? newValue.length : 'not array'}`);
-    
     setStoredValue(prevValue => {
-      console.log(`[DEBUG] useLocalStorage effect: prevValue length=${Array.isArray(prevValue) ? prevValue.length : 'not array'}`);
-      
       // If we have meaningful data in memory, preserve it and save to new storage
       if (prevValue !== initialValue && JSON.stringify(prevValue) !== JSON.stringify(initialValue)) {
-        console.log(`[DEBUG] useLocalStorage effect: Preserving current state and saving to new storage key`);
         // Save current state to the new storage key
         try {
           if (typeof window !== 'undefined') {
@@ -64,7 +57,6 @@ export function useLocalStorage<T>(
         }
         return prevValue;
       }
-      console.log(`[DEBUG] useLocalStorage effect: Using newValue from storage`);
       return newValue;
     });
   }, [isAuthenticated, userId]);
