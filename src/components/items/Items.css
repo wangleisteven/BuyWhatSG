@@ -172,12 +172,13 @@
   z-index: var(--z-index-modal);
   padding: var(--spacing-md);
   animation: fadeIn 0.3s ease-out;
+  animation-fill-mode: both;
 }
 
 .modal-content {
   background-color: var(--color-background);
   border-radius: var(--radius-lg);
-  width: 100%;
+  width: calc(100vw - 2 * var(--spacing-md));
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
@@ -196,13 +197,13 @@
 }
 
 @keyframes slideUp {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.95);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 

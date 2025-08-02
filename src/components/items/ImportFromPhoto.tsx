@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { createWorker } from 'tesseract.js';
-import { FiX, FiUpload } from 'react-icons/fi';
+import { FiX, FiUpload, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import GeminiService from '../../services/geminiService';
-import { API_CONFIG, validateApiKeys } from '../../config/apiConfig';
+import { API_CONFIG } from '../../config/apiConfig';
 import './ImportFromPhoto.css';
 
 type ImportFromPhotoProps = {
@@ -22,8 +23,9 @@ type ExtractedItem = {
 const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
   const { addItems } = useShoppingList();
   const { addToast } = useToast();
+  const { isAuthenticated, loginWithGoogle } = useAuth();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Real OCR function using Tesseract.js
@@ -210,7 +212,19 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
         </div>
 
         <div className="import-photo-content">
-          {isAnalyzing ? (
+          {!isAuthenticated ? (
+            <div className="login-required-state">
+              <FiLock size={48} className="lock-icon" />
+              <h4>Login Required</h4>
+              <p>You need to be logged in to use the Import from Photo feature.</p>
+              <button 
+                className="button-primary"
+                onClick={loginWithGoogle}
+              >
+                Login with Google
+              </button>
+            </div>
+          ) : isAnalyzing ? (
             <div className="analyzing-state">
               <div className="loading-spinner"></div>
               <h4>Analyzing your photo...</h4>

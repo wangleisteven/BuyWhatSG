@@ -151,7 +151,6 @@ function getEnhancedRecommendation(itemName: string): string {
       const normalizedSubcategory = subcategory.toLowerCase();
       
       // Calculate similarity scores
-      const levenshteinDist = levenshteinDistance(normalizedItemName, normalizedSubcategory);
       const diceCoeff = diceCoefficient(normalizedItemName, normalizedSubcategory);
       
       // Check for exact substring matches
@@ -353,7 +352,6 @@ export function getRecommendationDetails(itemName: string): CategoryMatch[] {
     subcategories.forEach((subcategory: string) => {
       const normalizedSubcategory = subcategory.toLowerCase();
       
-      const levenshteinDist = levenshteinDistance(normalizedItemName, normalizedSubcategory);
       const diceCoeff = diceCoefficient(normalizedItemName, normalizedSubcategory);
       
       const exactMatch = normalizedSubcategory.includes(normalizedItemName) || normalizedItemName.includes(normalizedSubcategory);

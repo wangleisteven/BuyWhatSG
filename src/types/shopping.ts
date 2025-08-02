@@ -9,6 +9,7 @@ export type ShoppingItem = {
   position: number;
   updatedAt?: number;
   firestoreId?: string; // ID of the document in Firestore, may be different from local id
+  deleted?: boolean; // Soft deletion flag
 };
 
 export type ShoppingList = {
@@ -18,4 +19,5 @@ export type ShoppingList = {
   createdAt: number;
   updatedAt: number;
   archived?: boolean;
+  deleted?: boolean; // Soft deletion flag
 };

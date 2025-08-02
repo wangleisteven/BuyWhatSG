@@ -14,8 +14,10 @@ const ListsPage = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [isCreatingList, setIsCreatingList] = useState(false);
 
-  // Filter and sort lists based on archive status
-  const filteredLists = lists.filter(list => showArchived ? list.archived : !list.archived);
+  // Filter and sort lists based on archive status, excluding deleted lists
+  const filteredLists = lists.filter(list => 
+    !list.deleted && (showArchived ? list.archived : !list.archived)
+  );
   const sortedLists = [...filteredLists].sort((a, b) => b.updatedAt - a.updatedAt);
 
   // Handle list click

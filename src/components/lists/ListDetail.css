@@ -9,10 +9,19 @@
   margin-bottom: var(--spacing-xs); /* Minimal margin */
 }
 
-.list-header .floating-add-button {
+/* Animated Add Menu */
+.animated-add-menu {
   position: fixed;
   bottom: 100px; /* Above bottom navigation */
   right: var(--spacing-lg);
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: var(--spacing-sm);
+  z-index: 1000;
+}
+
+.main-add-button {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -23,17 +32,65 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.list-header .floating-add-button:hover {
+.main-add-button:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.list-header .floating-add-button:active {
+.main-add-button:active {
   transform: scale(0.95);
+}
+
+.main-add-button.rotated {
+  transform: rotate(-90deg);
+}
+
+.main-add-button.rotated:hover {
+  transform: rotate(-90deg) scale(1.05);
+}
+
+.menu-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.menu-buttons.visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.menu-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.menu-button:active {
+  transform: scale(0.9);
 }
 
 

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiX, FiMic, FiMicOff } from 'react-icons/fi';
+import { FiX, FiMic, FiMicOff, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import WhisperService from '../../services/whisperService';
 import GeminiService from '../../services/geminiService';
-import { API_CONFIG, validateApiKeys } from '../../config/apiConfig';
+import { API_CONFIG } from '../../config/apiConfig';
 import './ListenToMe.css';
 
 // Type declarations for Web Speech API
@@ -30,6 +31,7 @@ type ExtractedItem = {
 const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
   const { addItem } = useShoppingList();
   const { addToast } = useToast();
+  const { isAuthenticated, loginWithGoogle } = useAuth();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
@@ -107,7 +109,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         return geminiItems.map(item => ({
           name: item.name,
           quantity: item.quantity || 1,
-          category: item.category || recommendCategory(item.name)
+          category: recommendCategory(item.name)
         }));
       } catch (error) {
         console.warn('Gemini parsing failed, falling back to basic parsing:', error);
@@ -374,7 +376,19 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         </div>
 
         <div className="listen-content">
-          {isProcessing ? (
+          {!isAuthenticated ? (
+            <div className="login-required-state">
+              <FiLock size={48} className="lock-icon" />
+              <h4>Login Required</h4>
+              <p>You need to be logged in to use the Listen to me feature.</p>
+              <button 
+                className="button-primary"
+                onClick={loginWithGoogle}
+              >
+                Login with Google
+              </button>
+            </div>
+          ) : isProcessing ? (
             <div className="processing-state">
               <div className="loading-spinner"></div>
               <h4>Processing your speech...</h4>

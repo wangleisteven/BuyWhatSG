@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiX } from 'react-icons/fi';
+import { FaKeyboard } from "react-icons/fa";
+import { IoMdPhotos } from "react-icons/io";
+import { RiVoiceAiFill } from "react-icons/ri";
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
-import AddItemMenu from '../items/AddItemMenu';
 import ImportFromPhoto from '../items/ImportFromPhoto';
 import ListenToMe from '../items/ListenToMe';
 import Toast from '../ui/Toast';
@@ -74,7 +76,7 @@ const ListDetail = () => {
 
   // Handle add item menu actions
   const handleAddButtonClick = () => {
-    setShowAddMenu(true);
+    setShowAddMenu(!showAddMenu);
   };
 
   const handleAddManually = () => {
@@ -91,17 +93,13 @@ const ListDetail = () => {
     setShowAddMenu(false);
     setShowListenToMe(true);
   };
-
-  const handleCloseAddMenu = () => {
-    setShowAddMenu(false);
-  };
   
   if (!currentList) {
     return <div className="container">Loading...</div>;
   }
   
   // Sort items by category -> status (todo > done) -> item last update time
-  const sortedItems = [...currentList.items].sort((a, b) => {
+  const sortedItems = [...currentList.items].filter(item => !item.deleted).sort((a, b) => {
     // First sort by completion status (uncompleted first)
     if (a.completed !== b.completed) {
       return a.completed ? 1 : -1;
@@ -146,29 +144,48 @@ const ListDetail = () => {
   return (
     <div className="list-detail container">
       <div className="list-header">
-        <button 
-          className="floating-add-button"
-          onClick={handleAddButtonClick}
-          aria-label="Add new item"
-        >
-          <FiPlus size={24} />
-        </button>
+        {/* Animated Add Menu */}
+        <div className="animated-add-menu">
+          <button
+            className={`main-add-button ${showAddMenu ? 'rotated' : ''}`}
+            onClick={handleAddButtonClick}
+            aria-label={showAddMenu ? "Close menu" : "Add new item"}
+          >
+            {showAddMenu ? <FiX size={24} /> : <FiPlus size={24} />}
+          </button>
+          
+          <div className={`menu-buttons ${showAddMenu ? 'visible' : ''}`}>
+            <button
+              className="menu-button"
+              onClick={handleAddManually}
+              aria-label="Add Manually"
+            >
+              <FaKeyboard size={20} />
+            </button>
+            
+            <button
+              className="menu-button"
+              onClick={handleImportFromPhoto}
+              aria-label="Import from Photo"
+            >
+              <IoMdPhotos size={20} />
+            </button>
+            
+            <button
+              className="menu-button"
+              onClick={handleListenToMe}
+              aria-label="Listen to me"
+            >
+              <RiVoiceAiFill size={20} />
+            </button>
+          </div>
+        </div>
       </div>
       
       {isAddingItem && (
         <AddItemForm 
           listId={currentList.id}
           onClose={() => setIsAddingItem(false)}
-        />
-      )}
-
-      {/* Add item menu */}
-      {showAddMenu && (
-        <AddItemMenu
-          onAddManually={handleAddManually}
-          onImportFromPhoto={handleImportFromPhoto}
-          onListenToMe={handleListenToMe}
-          onClose={handleCloseAddMenu}
         />
       )}
 

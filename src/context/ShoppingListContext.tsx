@@ -683,7 +683,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           
           // Check state without triggering re-renders
           const currentLists = lists;
-          const targetList = currentLists.find(l => l.id === listId);
           
           // Save all items to Firestore and collect their IDs
           const firestoreUpdates: { itemId: string; firestoreId: string }[] = [];
