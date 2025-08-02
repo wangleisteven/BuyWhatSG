@@ -396,26 +396,8 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
             </div>
           ) : (
             <>
-              <div className="api-mode-toggle">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={useWhisper}
-                    onChange={(e) => setUseWhisper(e.target.checked)}
-                    disabled={isListening || isRecording}
-                  />
-                  Use Whisper API (more accurate)
-                </label>
-                <small>
-                  {useWhisper 
-                    ? 'Records audio and uses OpenAI Whisper for transcription' 
-                    : 'Uses browser\'s built-in speech recognition'
-                  }
-                </small>
-              </div>
 
               <div className="transcription-area">
-                <h4>What we heard:</h4>
                 <div className="transcription-text">
                   {transcribedText || (
                     isListening ? 'Listening...' : 

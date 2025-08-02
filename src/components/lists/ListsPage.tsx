@@ -5,6 +5,7 @@ import { FiClock, FiTrash2, FiCopy, FiArchive, FiRotateCcw, FiPlus } from 'react
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useAlert } from '../../context/AlertContext';
 import { formatDate } from '../../utils/helpers';
+import emptyIcon from '../../assets/empty.svg';
 import './Lists.css';
 
 const ListsPage = () => {
@@ -131,6 +132,7 @@ const ListsPage = () => {
         <div className="lists-container">
           {sortedLists.length === 0 ? (
             <div className="empty-state">
+              <img src={emptyIcon} alt="Empty lists" className="empty-state-icon" />
               {showArchived ? (
                 <>
                   <p>No archived lists.</p>

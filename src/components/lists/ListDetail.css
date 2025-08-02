@@ -194,6 +194,13 @@
   color: var(--color-text-secondary);
 }
 
+.empty-list-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.8;
+}
+
 .empty-list p {
   margin-bottom: var(--spacing-sm);
 }

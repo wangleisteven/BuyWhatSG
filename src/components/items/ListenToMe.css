@@ -1,6 +1,7 @@
 /* Listen to Me Styles */
 .listen-to-me-modal {
   max-width: 500px;
+  width: 90vw;
 }
 
 .listen-content {
@@ -35,7 +36,7 @@
 /* Mic Controls */
 .mic-controls {
   text-align: center;
-  margin-bottom: var(--spacing-lg);
+  /* margin-bottom: var(--spacing-lg); */
 }
 
 .mic-button {
@@ -147,17 +148,20 @@
   font-size: var(--font-size-sm);
 }
 
-/* Speech Tips */
+
 .speech-tips {
+  text-align: left;
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
   background: var(--color-background-secondary);
   border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
 }
 
 .speech-tips h5 {
   margin: 0 0 var(--spacing-sm) 0;
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 

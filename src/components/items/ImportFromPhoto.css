@@ -1,6 +1,7 @@
 /* Import from Photo Styles */
 .import-photo-modal {
   max-width: 500px;
+  width: 90vw;
 }
 
 .import-photo-content {
@@ -117,7 +118,7 @@
 .import-tips h5 {
   margin: 0 0 var(--spacing-sm) 0;
   color: var(--color-text-primary);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
@@ -150,7 +151,7 @@
 .import-tips li {
   margin-bottom: var(--spacing-xs);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   line-height: 1.4;
 }
 

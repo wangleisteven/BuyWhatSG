@@ -13,6 +13,7 @@ import ImportFromPhoto from '../items/ImportFromPhoto';
 import ListenToMe from '../items/ListenToMe';
 import Toast from '../ui/Toast';
 import { categories, getCategoryName, getCategoryById } from '../../config/categories';
+import emptyIcon from '../../assets/empty.svg';
 import './ListDetail.css';
 
 
@@ -208,8 +209,9 @@ const ListDetail = () => {
       <div className="shopping-list">
         {uncompletedItems.length === 0 && completedItems.length === 0 ? (
           <div className="empty-list">
+            <img src={emptyIcon} alt="Empty list" className="empty-list-icon" />
             <p>This list is empty.</p>
-            <p>Tap the Add Item button to add your first item!</p>
+            <p>Tap the + button to add your first item!</p>
           </div>
         ) : (
           <>

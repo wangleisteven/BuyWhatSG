@@ -235,10 +235,6 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
               <div className="upload-area" onClick={handleUploadClick}>
                 <FiUpload size={48} className="upload-icon" />
                 <h4>Select a photo</h4>
-                <p>Choose an image containing your shopping list or grocery items</p>
-                <button className="button-primary">
-                  Choose Photo
-                </button>
               </div>
               
               <input
