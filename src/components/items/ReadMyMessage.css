@@ -1,0 +1,182 @@
+.read-message-modal {
+  max-width: 500px;
+  width: 90vw;
+}
+
+.read-message-content {
+  padding: var(--spacing-lg);
+}
+
+.message-input-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.message-input-section label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.message-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.message-textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.character-counter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.character-counter .warning {
+  color: var(--color-warning);
+}
+
+.message-tips {
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.message-tips h5 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.message-tips ul {
+  margin: 0;
+  padding-left: var(--spacing-md);
+}
+
+.message-tips li {
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.message-tips li:last-child {
+  margin-bottom: 0;
+}
+
+.login-required-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.lock-icon {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.login-required-state h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.login-required-state p {
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.analyzing-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--spacing-md) auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.analyzing-state h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.analyzing-state p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.action-buttons .button-secondary {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.action-buttons .button-secondary:hover {
+  background: var(--color-border);
+}
+
+.action-buttons .button-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .read-message-modal {
+    width: 95vw;
+  }
+  
+  .message-textarea {
+    min-height: 100px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons .button-secondary,
+  .action-buttons .button-primary {
+    width: 100%;
+  }
+}

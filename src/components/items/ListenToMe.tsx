@@ -380,7 +380,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
             <div className="login-required-state">
               <FiLock size={48} className="lock-icon" />
               <h4>Login Required</h4>
-              <p>You need to be logged in to use the Listen to me feature.</p>
+              <p>You need to be logged in to use the feature.</p>
               <button 
                 className="button-primary"
                 onClick={loginWithGoogle}

@@ -3,19 +3,62 @@
   "short_name": "BuyWhatSG",
   "description": "A simple shopping list app to help you organize your shopping",
   "start_url": "/",
-  "display": "fullscreen",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#4caf50",
   "icons": [
     {
-      "src": "apple-touch-icon.svg",
+      "src": "favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-512x512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "masked-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
   "orientation": "portrait",
   "categories": ["shopping", "productivity", "lifestyle"],
+  "protocol_handlers": [
+    {
+      "protocol": "web+buywhatsg",
+      "url": "/?handler=%s"
+    }
+  ],
+  "url_handlers": [
+    {
+      "origin": "https://397d1c0f105f.ngrok-free.app"
+    }
+  ],
+  "handle_links": "preferred",
   "shortcuts": [
     {
       "name": "New List",

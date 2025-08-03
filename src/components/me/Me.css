@@ -134,14 +134,16 @@
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--color-primary);
+  
   color: white;
-  padding: var(--spacing-md);
+  padding: var(--spacing-xl);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  text-align: center;
+  text-align: left;
   z-index: var(--z-index-toast);
   animation: slideUp var(--transition-fast) ease;
   max-width: 90%;
+  width: 80%;
 }
 
 /* Account section */

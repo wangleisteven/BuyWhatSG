@@ -7,9 +7,9 @@ import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';
-import './ImportFromPhoto.css';
+import './SeeMyPicture.css';
 
-type ImportFromPhotoProps = {
+type SeeMyPictureProps = {
   listId: string;
   onClose: () => void;
 };
@@ -20,7 +20,7 @@ type ExtractedItem = {
   category: string;
 };
 
-const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
+const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
   const { addItems } = useShoppingList();
   const { addToast } = useToast();
   const { isAuthenticated, loginWithGoogle } = useAuth();
@@ -199,9 +199,9 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content import-photo-modal">
+      <div className="modal-content see-my-picture-modal">
         <div className="modal-header">
-          <h3>Import from Photo</h3>
+          <h3>See My Picture</h3>
           <button 
             className="button-icon-small"
             onClick={onClose}
@@ -211,12 +211,12 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
           </button>
         </div>
 
-        <div className="import-photo-content">
+        <div className="see-my-picture-content">
           {!isAuthenticated ? (
             <div className="login-required-state">
               <FiLock size={48} className="lock-icon" />
               <h4>Login Required</h4>
-              <p>You need to be logged in to use the Import from Photo feature.</p>
+              <p>You need to be logged in to use the See My Picture feature.</p>
               <button 
                 className="button-primary"
                 onClick={loginWithGoogle}
@@ -234,7 +234,7 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
             <div className="upload-state">
               <div className="upload-area" onClick={handleUploadClick}>
                 <FiUpload size={48} className="upload-icon" />
-                <h4>Select a photo</h4>
+                <h4>Select a picture</h4>
               </div>
               
               <input
@@ -245,7 +245,7 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
                 style={{ display: 'none' }}
               />
               
-              <div className="import-tips">
+              <div className="picture-tips">
                 <h5>Tips for better results:</h5>
                 <div className="sample-image-container">
                   <img 
@@ -270,4 +270,4 @@ const ImportFromPhoto = ({ listId, onClose }: ImportFromPhotoProps) => {
   );
 };
 
-export default ImportFromPhoto;
+export default SeeMyPicture;

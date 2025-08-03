@@ -1,67 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { isStandalone } from '../../utils/helpers';
+import { usePWA } from '../../context/PWAContext';
 import './MePage.css';
 import './Me.css';
 
 const MePage = () => {
   const { user, logout, loginWithGoogle, loading, isOnline } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [canInstall, setCanInstall] = useState(false);
-  
-  // Check if app is already installed as PWA
-  const isPWA = isStandalone();
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later
-      setDeferredPrompt(e);
-      setCanInstall(true);
-    };
-
-    const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      setCanInstall(false);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
+  const { canInstall, isPWA, showInstallPrompt } = usePWA();
+  const [showLocalInstallPrompt, setShowLocalInstallPrompt] = useState(false);
 
   // Handle install PWA
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      setShowInstallPrompt(true);
-      setTimeout(() => setShowInstallPrompt(false), 3000);
-      return;
+    if (canInstall && !isPWA) {
+      try {
+        await showInstallPrompt();
+      } catch (error) {
+        console.error('Failed to show install prompt:', error);
+        // You could show a user-friendly error message here
+      }
     }
-
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    
-    // Clear the deferredPrompt
-    setDeferredPrompt(null);
-    setCanInstall(false);
   };
 
   return (
@@ -132,11 +92,17 @@ const MePage = () => {
             </div>
           </div>
         )}
+        
       </div>
 
-      {showInstallPrompt && (
+      {showLocalInstallPrompt && (
         <div className="install-prompt">
-          Add this app to your home screen for a better experience!
+          <p>To install this app:</p>
+          <ol>
+            <li>Open your browser menu</li>
+            <li>Look for "Install app" or "Add to home screen"</li>
+            <li>Follow the prompts to install</li>
+          </ol>
         </div>
       )}
 

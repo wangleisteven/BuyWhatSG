@@ -58,13 +58,15 @@
   border-radius: var(--radius-full);
   background: none;
   border: none;
-  color: var(--color-text-secondary);
+  color: #666666;
   cursor: pointer;
   transition: background-color var(--transition-fast) ease;
+  font-size: 20px;
 }
 
 .install-prompt-dismiss:hover {
   background-color: var(--color-surface-hover);
+  color: #333333;
 }
 
 /* Animation */

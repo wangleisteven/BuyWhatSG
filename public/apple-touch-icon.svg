@@ -1,15 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="256" fill="#58CC02"/>
-  <path d="M170.667 128C170.667 116.954 179.621 108 190.667 108H321.333C332.379 108 341.333 116.954 341.333 128V384C341.333 395.046 332.379 404 321.333 404H190.667C179.621 404 170.667 395.046 170.667 384V128Z" fill="white"/>
-  <path d="M192 149.333H320V362.667H192V149.333Z" fill="#58CC02"/>
-  <path d="M213.333 170.667H234.667V192H213.333V170.667Z" fill="white"/>
-  <path d="M256 170.667H298.667V192H256V170.667Z" fill="white"/>
-  <path d="M213.333 213.333H256V234.667H213.333V213.333Z" fill="white"/>
-  <path d="M277.333 213.333H298.667V234.667H277.333V213.333Z" fill="white"/>
-  <path d="M213.333 256H234.667V277.333H213.333V256Z" fill="white"/>
-  <path d="M256 256H298.667V277.333H256V256Z" fill="white"/>
-  <path d="M213.333 298.667H256V320H213.333V298.667Z" fill="white"/>
-  <path d="M277.333 298.667H298.667V320H277.333V298.667Z" fill="white"/>
-  <path d="M213.333 341.333H234.667V362.667H213.333V341.333Z" fill="white"/>
-  <path d="M256 341.333H298.667V362.667H256V341.333Z" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <!-- Shopping list clipboard -->
+  <rect x="34" y="22" width="112" height="146" rx="11" ry="11" fill="#00A651" stroke="#00A651" stroke-width="5"/>
+  <rect x="45" y="34" width="90" height="123" fill="white"/>
+  
+  <!-- Clipboard clip -->
+  <rect x="67" y="11" width="45" height="22" rx="5" ry="5" fill="#00A651"/>
+  
+  <!-- Shopping list items with checkboxes -->
+  <g fill="#00A651">
+    <!-- Item 1 -->
+    <rect x="56" y="50" width="11" height="11" rx="1.7"/>
+    <rect x="73" y="53" width="45" height="5" rx="2.5"/>
+    
+    <!-- Item 2 -->
+    <rect x="56" y="73" width="11" height="11" rx="1.7"/>
+    <rect x="73" y="76" width="34" height="5" rx="2.5"/>
+    
+    <!-- Item 3 -->
+    <rect x="56" y="96" width="11" height="11" rx="1.7"/>
+    <rect x="73" y="99" width="39" height="5" rx="2.5"/>
+    
+    <!-- Item 4 -->
+    <rect x="56" y="119" width="11" height="11" rx="1.7"/>
+    <rect x="73" y="122" width="28" height="5" rx="2.5"/>
+  </g>
+  
+  <!-- Convenience indicator - checkmark in circle -->
+  <circle cx="123" cy="135" r="22" fill="#00A651"/>
+  <path d="M112 135 L120 143 L134 126" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

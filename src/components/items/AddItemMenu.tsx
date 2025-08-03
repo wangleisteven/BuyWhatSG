@@ -1,16 +1,18 @@
 import { FaKeyboard } from "react-icons/fa";
 import { IoMdPhotos } from "react-icons/io";
 import { RiVoiceAiFill } from "react-icons/ri";
+import { LuMessageSquareMore } from "react-icons/lu";
 import './AddItemMenu.css';
 
 type AddItemMenuProps = {
   onAddManually: () => void;
-  onImportFromPhoto: () => void;
+  onSeeMyPicture: () => void;
   onListenToMe: () => void;
+  onReadMyMessage: () => void;
   onClose: () => void;
 };
 
-const AddItemMenu = ({ onAddManually, onImportFromPhoto, onListenToMe, onClose }: AddItemMenuProps) => {
+const AddItemMenu = ({ onAddManually, onSeeMyPicture, onListenToMe, onReadMyMessage, onClose }: AddItemMenuProps) => {
   return (
     <>
       {/* Backdrop to close menu when clicking outside */}
@@ -27,10 +29,18 @@ const AddItemMenu = ({ onAddManually, onImportFromPhoto, onListenToMe, onClose }
         
         <button 
           className="add-item-menu-option"
-          onClick={onImportFromPhoto}
+          onClick={onReadMyMessage}
+        >
+          <LuMessageSquareMore className="add-item-menu-icon" />
+          <span>Read My Message</span>
+        </button>
+        
+        <button 
+          className="add-item-menu-option"
+          onClick={onSeeMyPicture}
         >
           <IoMdPhotos className="add-item-menu-icon" />
-          <span>Import from Photo</span>
+          <span>See My Picture</span>
         </button>
         
         <button 

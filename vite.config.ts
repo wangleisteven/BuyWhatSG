@@ -46,6 +46,8 @@ export default defineConfig({
     })
   ],
   server: {
-    allowedHosts: ['89a20fda3435.ngrok-free.app']
+    allowedHosts: ['37044077c412.ngrok-free.app'],
+    host: true
+    // ngrok handles HTTPS, so we don't need to configure it here
   }
 })

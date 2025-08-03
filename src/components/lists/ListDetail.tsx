@@ -4,13 +4,15 @@ import { FiPlus, FiX } from 'react-icons/fi';
 import { FaKeyboard } from "react-icons/fa";
 import { IoMdPhotos } from "react-icons/io";
 import { RiVoiceAiFill } from "react-icons/ri";
+import { LuMessageSquareMore } from "react-icons/lu";
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types/shopping';
 import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
-import ImportFromPhoto from '../items/ImportFromPhoto';
+import SeeMyPicture from '../items/SeeMyPicture';
 import ListenToMe from '../items/ListenToMe';
+import ReadMyMessage from '../items/ReadMyMessage';
 import Toast from '../ui/Toast';
 import { categories, getCategoryName, getCategoryById } from '../../config/categories';
 import emptyIcon from '../../assets/empty.svg';
@@ -31,8 +33,9 @@ const ListDetail = () => {
   
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [showImportFromPhoto, setShowImportFromPhoto] = useState(false);
+  const [showSeeMyPicture, setShowSeeMyPicture] = useState(false);
   const [showListenToMe, setShowListenToMe] = useState(false);
+  const [showReadMyMessage, setShowReadMyMessage] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
   
@@ -85,14 +88,19 @@ const ListDetail = () => {
     setIsAddingItem(true);
   };
 
-  const handleImportFromPhoto = () => {
+  const handleSeeMyPicture = () => {
     setShowAddMenu(false);
-    setShowImportFromPhoto(true);
+    setShowSeeMyPicture(true);
   };
 
   const handleListenToMe = () => {
     setShowAddMenu(false);
     setShowListenToMe(true);
+  };
+
+  const handleReadMyMessage = () => {
+    setShowAddMenu(false);
+    setShowReadMyMessage(true);
   };
   
   if (!currentList) {
@@ -166,8 +174,16 @@ const ListDetail = () => {
             
             <button
               className="menu-button"
-              onClick={handleImportFromPhoto}
-              aria-label="Import from Photo"
+              onClick={handleReadMyMessage}
+              aria-label="Read My Message"
+            >
+              <LuMessageSquareMore size={20} />
+            </button>
+            
+            <button
+              className="menu-button"
+              onClick={handleSeeMyPicture}
+              aria-label="See My Picture"
             >
               <IoMdPhotos size={20} />
             </button>
@@ -190,19 +206,27 @@ const ListDetail = () => {
         />
       )}
 
-      {/* Import from photo modal */}
-      {showImportFromPhoto && (
-        <ImportFromPhoto
-          listId={currentList.id}
-          onClose={() => setShowImportFromPhoto(false)}
-        />
-      )}
+      {/* See My Picture modal */}
+      {showSeeMyPicture && (
+          <SeeMyPicture
+            listId={currentList.id}
+            onClose={() => setShowSeeMyPicture(false)}
+          />
+        )}
 
       {/* Listen to me modal */}
       {showListenToMe && (
         <ListenToMe
           listId={currentList.id}
           onClose={() => setShowListenToMe(false)}
+        />
+      )}
+
+      {/* Read my message modal */}
+      {showReadMyMessage && (
+        <ReadMyMessage
+          listId={currentList.id}
+          onClose={() => setShowReadMyMessage(false)}
         />
       )}
       

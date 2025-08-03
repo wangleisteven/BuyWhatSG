@@ -5,6 +5,7 @@ import { ShoppingListProvider } from './ShoppingListContext';
 import { NotificationProvider } from './NotificationContext';
 import { ToastProvider } from './ToastContext';
 import { AlertProvider } from './AlertContext';
+import { PWAProvider } from './PWAContext';
 
 type AppProviderProps = {
   children: ReactNode;
@@ -13,17 +14,19 @@ type AppProviderProps = {
 export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <AlertProvider>
-              <ShoppingListProvider>
-                {children}
-              </ShoppingListProvider>
-            </AlertProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </ToastProvider>
+      <PWAProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <AlertProvider>
+                <ShoppingListProvider>
+                  {children}
+                </ShoppingListProvider>
+              </AlertProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </PWAProvider>
     </ThemeProvider>
   );
 };
