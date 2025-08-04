@@ -8,16 +8,18 @@ type ShoppingListItemProps = {
   item: ShoppingItem;
   listId: string;
   onEdit: () => void;
+  isArchived?: boolean;
 };
 
 const ShoppingListItem = ({ 
   item, 
   listId, 
-  onEdit
+  onEdit,
+  isArchived = false
 }: ShoppingListItemProps) => {
   const { toggleItemCompletion, deleteItem } = useShoppingList();
   
-  // Handle swipe to delete
+  // Handle swipe to delete (disabled for archived lists)
   const { 
     onTouchStart, 
     onTouchMove, 
@@ -27,12 +29,14 @@ const ShoppingListItem = ({
     resetSwipe 
   } = useSwipe(
     75, // threshold
-    () => handleDelete(), // onSwipeLeft
+    isArchived ? undefined : () => handleDelete(), // onSwipeLeft disabled for archived
     undefined // onSwipeRight
   );
   
-  // Handle item completion toggle
+  // Handle item completion toggle (disabled for archived lists)
   const handleToggleCompletion = async () => {
+    if (isArchived) return; // Prevent completion toggle for archived lists
+    
     try {
       await toggleItemCompletion(listId, item.id);
     } catch (error) {
@@ -75,27 +79,29 @@ const ShoppingListItem = ({
 
   return (
     <div 
-      className={`shopping-list-item ${item.completed ? 'completed' : ''}`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      className={`shopping-list-item ${item.completed ? 'completed' : ''} ${isArchived ? 'archived' : ''}`}
+      onTouchStart={isArchived ? undefined : onTouchStart}
+      onTouchMove={isArchived ? undefined : onTouchMove}
+      onTouchEnd={isArchived ? undefined : onTouchEnd}
     >
       <div 
         className="shopping-list-item-content"
-        style={getSwipeStyle()}
+        style={isArchived ? {} : getSwipeStyle()}
       >
-
-        
-        <div 
-          className="shopping-list-item-checkbox"
-          onClick={handleToggleCompletion}
-        >
-          <div className={`checkbox ${item.completed ? 'checked' : ''}`}></div>
-        </div>
+        {/* Hide checkbox for archived lists */}
+        {!isArchived && (
+          <div 
+            className="shopping-list-item-checkbox"
+            onClick={handleToggleCompletion}
+          >
+            <div className={`checkbox ${item.completed ? 'checked' : ''}`}></div>
+          </div>
+        )}
         
         <div 
           className="shopping-list-item-details"
-          onClick={onEdit}
+          onClick={isArchived ? undefined : onEdit}
+          style={isArchived ? { cursor: 'default' } : {}}
         >
           {item.quantity > 1 && (
             <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
@@ -108,14 +114,16 @@ const ShoppingListItem = ({
         {/* Actions removed - edit by tapping item, delete by swiping left */}
       </div>
       
-      {/* Delete button that appears when swiping */}
-      <div 
-        className="shopping-list-item-delete-button"
-        style={getDeleteButtonStyle()}
-        onClick={handleDelete}
-      >
-        <FiTrash2 size={20} />
-      </div>
+      {/* Delete button that appears when swiping (hidden for archived lists) */}
+      {!isArchived && (
+        <div 
+          className="shopping-list-item-delete-button"
+          style={getDeleteButtonStyle()}
+          onClick={handleDelete}
+        >
+          <FiTrash2 size={20} />
+        </div>
+      )}
     </div>
   );
 };

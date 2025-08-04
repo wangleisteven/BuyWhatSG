@@ -19,6 +19,12 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

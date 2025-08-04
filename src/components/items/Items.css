@@ -309,6 +309,23 @@
   color: white;
 }
 
+/* Archived list item styles */
+.shopping-list-item.archived {
+  opacity: 0.85;
+}
+
+.shopping-list-item.archived .shopping-list-item-content {
+  background-color: var(--color-background);
+}
+
+.shopping-list-item.archived .shopping-list-item-details {
+  pointer-events: none;
+}
+
+.shopping-list-item.archived .shopping-list-item-name {
+  color: var(--color-text-secondary);
+}
+
 /* Responsive adjustments */
 @media (min-width: 768px) {
   .shopping-list-item-content {

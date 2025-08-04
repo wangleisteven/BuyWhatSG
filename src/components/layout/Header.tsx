@@ -105,7 +105,7 @@ const Header = () => {
             ) : (
               <div className="flex items-center gap-sm">
                 <h1 className="header-title">{getTitle()}</h1>
-                {isListPage && currentList && (
+                {isListPage && currentList && !currentList.archived && (
                   <button 
                     className="button-icon"
                     onClick={handleEditTitle}

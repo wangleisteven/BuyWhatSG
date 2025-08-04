@@ -153,77 +153,79 @@ const ListDetail = () => {
   return (
     <div className="list-detail container">
       <div className="list-header">
-        {/* Animated Add Menu */}
-        <div className="animated-add-menu">
-          <button
-            className={`main-add-button ${showAddMenu ? 'rotated' : ''}`}
-            onClick={handleAddButtonClick}
-            aria-label={showAddMenu ? "Close menu" : "Add new item"}
-          >
-            {showAddMenu ? <FiX size={24} /> : <FiPlus size={24} />}
-          </button>
-          
-          <div className={`menu-buttons ${showAddMenu ? 'visible' : ''}`}>
+        {/* Animated Add Menu - Hidden for archived lists */}
+        {!currentList?.archived && (
+          <div className="animated-add-menu">
             <button
-              className="menu-button"
-              onClick={handleAddManually}
-              aria-label="Add Manually"
+              className={`main-add-button ${showAddMenu ? 'rotated' : ''}`}
+              onClick={handleAddButtonClick}
+              aria-label={showAddMenu ? "Close menu" : "Add new item"}
             >
-              <FaKeyboard size={20} />
+              {showAddMenu ? <FiX size={24} /> : <FiPlus size={24} />}
             </button>
             
-            <button
-              className="menu-button"
-              onClick={handleReadMyMessage}
-              aria-label="Read My Message"
-            >
-              <LuMessageSquareMore size={20} />
-            </button>
-            
-            <button
-              className="menu-button"
-              onClick={handleSeeMyPicture}
-              aria-label="See My Picture"
-            >
-              <IoMdPhotos size={20} />
-            </button>
-            
-            <button
-              className="menu-button"
-              onClick={handleListenToMe}
-              aria-label="Listen to me"
-            >
-              <RiVoiceAiFill size={20} />
-            </button>
+            <div className={`menu-buttons ${showAddMenu ? 'visible' : ''}`}>
+              <button
+                className="menu-button"
+                onClick={handleAddManually}
+                aria-label="Add Manually"
+              >
+                <FaKeyboard size={20} />
+              </button>
+              
+              <button
+                className="menu-button"
+                onClick={handleReadMyMessage}
+                aria-label="Read My Message"
+              >
+                <LuMessageSquareMore size={20} />
+              </button>
+              
+              <button
+                className="menu-button"
+                onClick={handleSeeMyPicture}
+                aria-label="See My Picture"
+              >
+                <IoMdPhotos size={20} />
+              </button>
+              
+              <button
+                className="menu-button"
+                onClick={handleListenToMe}
+                aria-label="Listen to me"
+              >
+                <RiVoiceAiFill size={20} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
-      {isAddingItem && (
+      {isAddingItem && !currentList?.archived && (
         <AddItemForm 
           listId={currentList.id}
           onClose={() => setIsAddingItem(false)}
         />
       )}
 
-      {/* See My Picture modal */}
-      {showSeeMyPicture && (
+      {/* See My Picture modal - disabled for archived lists */}
+      {showSeeMyPicture && !currentList?.archived && (
           <SeeMyPicture
             listId={currentList.id}
             onClose={() => setShowSeeMyPicture(false)}
           />
         )}
 
-      {/* Listen to me modal */}
-      {showListenToMe && (
+      {/* Listen to me modal - disabled for archived lists */}
+      {showListenToMe && !currentList?.archived && (
         <ListenToMe
           listId={currentList.id}
           onClose={() => setShowListenToMe(false)}
         />
       )}
 
-      {/* Read my message modal */}
-      {showReadMyMessage && (
+      {/* Read my message modal - disabled for archived lists */}
+      {showReadMyMessage && !currentList?.archived && (
         <ReadMyMessage
           listId={currentList.id}
           onClose={() => setShowReadMyMessage(false)}
@@ -235,7 +237,11 @@ const ListDetail = () => {
           <div className="empty-list">
             <img src={emptyIcon} alt="Empty list" className="empty-list-icon" />
             <p>This list is empty.</p>
-            <p>Tap the + button to add your first item!</p>
+            {!currentList?.archived ? (
+              <p>Tap the + button to add your first item!</p>
+            ) : (
+              <p>Archive lists to keep it organized.</p>
+            )}
           </div>
         ) : (
           <>
@@ -251,7 +257,8 @@ const ListDetail = () => {
                     key={item.id}
                     item={item}
                     listId={currentList.id}
-                    onEdit={() => setEditingItem(item)}
+                    onEdit={() => !currentList?.archived && setEditingItem(item)}
+                    isArchived={currentList?.archived}
                   />
                 ))}
               </div>
@@ -269,7 +276,8 @@ const ListDetail = () => {
                     key={item.id}
                     item={item}
                     listId={currentList.id}
-                    onEdit={() => setEditingItem(item)}
+                    onEdit={() => !currentList?.archived && setEditingItem(item)}
+                    isArchived={currentList?.archived}
                   />
                 ))}
               </div>
@@ -278,8 +286,8 @@ const ListDetail = () => {
         )}
       </div>
       
-      {/* Edit item modal */}
-      {editingItem && (
+      {/* Edit Item Modal - disabled for archived lists */}
+      {editingItem && !currentList?.archived && (
         <EditItemModal
           item={editingItem}
           listId={currentList.id}

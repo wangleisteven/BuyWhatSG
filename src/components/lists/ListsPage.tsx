@@ -160,7 +160,7 @@ const ListsPage = () => {
                     
                     <div className="list-card-stats">
                       <span className="list-card-progress">
-                        {completed}/{total} items
+                        {showArchived ? total : `${completed}/${total}`} items
                       </span>
                       
                       <div className="list-card-date">
@@ -218,6 +218,7 @@ const ListsPage = () => {
         onClick={handleCreateList}
         disabled={isCreatingList}
         aria-label="Create new list"
+        style={{ display: showArchived ? 'none' : 'block' }}
       >
         <FiPlus size={24} />
       </button>

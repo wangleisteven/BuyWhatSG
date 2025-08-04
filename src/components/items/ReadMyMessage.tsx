@@ -117,7 +117,6 @@ const ReadMyMessage = ({ listId, onClose }: ReadMyMessageProps) => {
           ) : (
             <>
               <div className="message-input-section">
-                <label htmlFor="message-textarea">Enter your shopping message:</label>
                 <textarea
                   id="message-textarea"
                   ref={textareaRef}
@@ -145,12 +144,6 @@ const ReadMyMessage = ({ listId, onClose }: ReadMyMessageProps) => {
               </div>
               
               <div className="modal-actions">
-                <button 
-                  className="button-secondary"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
                 <button 
                   className="button-primary"
                   onClick={handleCreateItems}

@@ -179,4 +179,9 @@
   .action-buttons .button-primary {
     width: 100%;
   }
+
+  .modal-actions {
+    display: flex;
+    justify-content: center;
+  }
 }

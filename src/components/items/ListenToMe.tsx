@@ -9,14 +9,6 @@ import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';
 import './ListenToMe.css';
 
-// Type declarations for Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
 type ListenToMeProps = {
   listId: string;
   onClose: () => void;
@@ -32,69 +24,20 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
   const { addItem } = useShoppingList();
   const { addToast } = useToast();
   const { isAuthenticated, loginWithGoogle } = useAuth();
-  const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [useWhisper, setUseWhisper] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
-    // Check if speech recognition is supported
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    // Check if OpenAI API key is configured
+    if (!API_CONFIG.OPENAI_API_KEY) {
       addToast({
-        message: 'Speech recognition is not supported in this browser.',
+        message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY environment variable.',
         type: 'error'
       });
-      return;
     }
-
-    // Initialize speech recognition
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event: any) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      setTranscribedText(finalTranscript + interimTranscript);
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      addToast({
-        message: 'Speech recognition error. Please try again.',
-        type: 'error'
-      });
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognitionRef.current = recognition;
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
   }, [addToast]);
 
   // Parse transcribed text to identify items with quantities using Gemini AI
@@ -224,8 +167,8 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
   const transcribeWithWhisper = async (audioBlob: Blob) => {
     if (!API_CONFIG.OPENAI_API_KEY) {
       addToast({
-        message: 'OpenAI API key not configured. Using Web Speech API instead.',
-        type: 'warning'
+        message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY environment variable.',
+        type: 'error'
       });
       return;
     }
@@ -283,81 +226,18 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
   };
 
   const handleMicToggle = async () => {
-    if (useWhisper) {
-      // Use Whisper API mode
-      if (isRecording) {
-        stopRecording();
-      } else {
-        await startRecording();
-      }
+    if (!API_CONFIG.OPENAI_API_KEY) {
+      addToast({
+        message: 'OpenAI API key not configured. Please set VITE_OPENAI_API_KEY environment variable.',
+        type: 'error'
+      });
+      return;
+    }
+
+    if (isRecording) {
+      stopRecording();
     } else {
-      // Use Web Speech API mode
-      if (!recognitionRef.current) {
-        addToast({
-          message: 'Speech recognition is not available.',
-          type: 'error'
-        });
-        return;
-      }
-
-      if (isListening) {
-        // Stop listening and process
-        recognitionRef.current.stop();
-        setIsListening(false);
-        
-        if (transcribedText.trim()) {
-          setIsProcessing(true);
-          
-          try {
-            // Parse items from transcribed text
-            const extractedItems = await parseItemsFromText(transcribedText);
-            
-            if (extractedItems.length === 0) {
-              addToast({
-                message: 'No items could be detected from your speech. Please try again.',
-                type: 'error'
-              });
-              setIsProcessing(false);
-              return;
-            }
-
-            // Add all items to the list
-            for (const item of extractedItems) {
-              await addItem(listId, {
-                name: item.name,
-                quantity: item.quantity,
-                category: item.category,
-                completed: false,
-                photoURL: ''
-              });
-            }
-
-            setIsProcessing(false);
-            addToast({
-              message: 'Items added successfully!',
-              type: 'success'
-            });
-            
-            // Close modal after showing success
-            setTimeout(() => {
-              onClose();
-            }, 1500);
-
-          } catch (error) {
-            console.error('Error processing speech:', error);
-            addToast({
-              message: 'Failed to process your speech. Please try again.',
-              type: 'error'
-            });
-            setIsProcessing(false);
-          }
-        }
-      } else {
-        // Start listening
-        setTranscribedText('');
-        setIsListening(true);
-        recognitionRef.current.start();
-      }
+      await startRecording();
     }
   };
 
@@ -369,7 +249,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
           <button 
             className="button-icon-small"
             onClick={onClose}
-            disabled={isListening || isProcessing}
+            disabled={isRecording || isProcessing}
           >
             <FiX size={20} />
           </button>
@@ -400,29 +280,27 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
               <div className="transcription-area">
                 <div className="transcription-text">
                   {transcribedText || (
-                    isListening ? 'Listening...' : 
                     isRecording ? 'Recording...' : 
-                    'Click the microphone to start speaking'
+                    'Click the microphone to start recording'
                   )}
                 </div>
               </div>
 
               <div className="mic-controls">
                 <button
-                  className={`mic-button ${(isListening || isRecording) ? 'listening' : ''}`}
+                  className={`mic-button ${isRecording ? 'listening' : ''}`}
                   onClick={handleMicToggle}
                   disabled={isProcessing}
                 >
-                  {(isListening || isRecording) ? (
+                  {isRecording ? (
                     <FiMicOff size={32} />
                   ) : (
                     <FiMic size={32} />
                   )}
                 </button>
                 <p className="mic-instruction">
-                  {isListening ? 'Click to stop and add items' : 
-                   isRecording ? 'Click to stop recording' :
-                   'Click to start speaking'}
+                  {isRecording ? 'Click to stop recording and add items' :
+                   'Click to start recording'}
                 </p>
               </div>
 
@@ -433,8 +311,10 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
                   <li>Include quantities: "two apples, three bananas"</li>
                   <li>Separate items with "and" or pauses</li>
                   <li>Use simple item names</li>
-                  {useWhisper && <li>Whisper API provides more accurate transcription</li>}
                 </ul>
+                {!API_CONFIG.OPENAI_API_KEY && (
+                  <p className="api-warning">⚠️ OpenAI API key not configured. Please set VITE_OPENAI_API_KEY environment variable.</p>
+                )}
               </div>
             </>
           )}
