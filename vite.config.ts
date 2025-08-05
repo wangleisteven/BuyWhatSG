@@ -47,7 +47,7 @@ export default defineConfig({
     })
   ],
   server: {
-    allowedHosts: ['9191a7dbaf9a.ngrok-free.app'],
+    allowedHosts: ['9191a7dbaf9a.ngrok-free.app', '10.22.65.187'],
     host: true,
     https: {
       key: fs.readFileSync('./localhost+2-key.pem'),

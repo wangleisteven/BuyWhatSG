@@ -33,10 +33,61 @@
   word-wrap: break-word;
 }
 
-/* Mic Controls */
+/* Sound Wave Visualization */
+.sound-wave-container {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  margin: 1rem 0 2rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sound-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  width: 80%;
+}
+
+.wave-bar {
+  width: 4px;
+  background: linear-gradient(to top, #10b981, #34d399);
+  border-radius: 2px;
+  transition: height 0.1s ease;
+  min-height: 4px;
+}
+
+
+
+/* Microphone Controls */
 .mic-controls {
-  text-align: center;
-  /* margin-bottom: var(--spacing-lg); */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.mic-button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-donut {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .mic-button {
@@ -44,40 +95,49 @@
   height: 80px;
   border-radius: 50%;
   border: none;
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--spacing-sm) auto;
-  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  position: relative;
+  z-index: 2;
 }
 
 .mic-button:hover {
-  background: var(--color-primary-dark);
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .mic-button:active {
-  transform: scale(0.95);
+  transform: translateY(0);
 }
 
 .mic-button.listening {
-  background: var(--color-error);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
   animation: pulse 1.5s infinite;
 }
 
+.mic-button.listening:hover {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.mic-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  0%, 100% {
+    transform: scale(1);
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  50% {
+    transform: scale(1.05);
   }
 }
 
@@ -180,38 +240,59 @@
   margin-bottom: 0;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .transcription-area h4,
-  .processing-state h4 {
-    color: var(--color-text-primary-dark);
-  }
-  
-  .transcription-text {
-    background: var(--color-background-secondary-dark);
-    border-color: var(--color-border-dark);
-    color: var(--color-text-primary-dark);
-  }
-  
-  .mic-instruction,
-  .processing-state p {
-    color: var(--color-text-secondary-dark);
-  }
-  
-  .processing-state .loading-spinner {
-    border-color: var(--color-background-secondary-dark);
-    border-top-color: var(--color-primary);
-  }
-  
-  .speech-tips {
-    background: var(--color-background-secondary-dark);
-  }
-  
-  .speech-tips h5 {
-    color: var(--color-text-primary-dark);
-  }
-  
-  .speech-tips ul {
-    color: var(--color-text-secondary-dark);
-  }
+/* Dark mode styles */
+.dark .listen-to-me-modal {
+  background: var(--color-surface-dark);
+  border: 1px solid var(--color-border-dark);
+}
+
+.dark .modal-header h3 {
+  color: var(--color-text-primary-dark);
+}
+
+.dark .close-button {
+  color: var(--color-text-secondary-dark);
+}
+
+.dark .close-button:hover {
+  color: var(--color-text-primary-dark);
+}
+
+.dark .sound-wave-container {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .wave-bar {
+  background: linear-gradient(to top, #059669, #10b981);
+}
+
+.dark .mic-instruction {
+  color: var(--color-text-secondary-dark);
+}
+
+.dark .speech-tips {
+  background: var(--color-background-dark);
+  border: 1px solid var(--color-border-dark);
+}
+
+.dark .speech-tips h5 {
+  color: var(--color-text-primary-dark);
+}
+
+.dark .speech-tips li {
+  color: var(--color-text-secondary-dark);
+}
+
+.dark .api-warning {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.dark .login-required p {
+  color: var(--color-text-secondary-dark);
+}
+
+.dark .processing-state p {
+  color: var(--color-text-secondary-dark);
 }
