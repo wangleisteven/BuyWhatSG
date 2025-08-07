@@ -21,7 +21,7 @@ type ExtractedItem = {
 };
 
 const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
-  const { addItem } = useShoppingList();
+  const { addItems } = useShoppingList();
   const { addToast } = useToast();
   const { isAuthenticated, loginWithGoogle } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -444,16 +444,16 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         return;
       }
 
-      // Add all items to the list
-      for (const item of extractedItems) {
-        await addItem(listId, {
-          name: item.name,
-          quantity: item.quantity,
-          category: item.category,
-          completed: false,
-          photoURL: ''
-        });
-      }
+      // Add all items to the list in batch
+      const itemsToAdd = extractedItems.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        category: item.category,
+        completed: false,
+        photoURL: ''
+      }));
+      
+      await addItems(listId, itemsToAdd);
 
       setIsProcessing(false);
       addToast({

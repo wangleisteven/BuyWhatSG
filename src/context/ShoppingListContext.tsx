@@ -189,27 +189,27 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         // Get the retry count from the error or default to 0
         const retryCount = (error.retryCount || 0) + 1;
         
-        // Implement exponential backoff for retries
+        // Implement fast retries for better UX
         if (retryCount > 1) {
-          // Calculate delay with exponential backoff and some randomness
-          const baseDelay = 500; // 500ms base for faster retries
-          const maxDelay = 10000; // 10 seconds max for better UX
+          // Much faster retries with minimal delay
+          const baseDelay = 100; // 100ms base for instant retries
+          const maxDelay = 2000; // 2 seconds max for better UX
           const exponentialDelay = Math.min(
-            baseDelay * Math.pow(2, Math.min(retryCount - 1, 5)) + (Math.random() * 1000),
+            baseDelay * Math.pow(1.5, Math.min(retryCount - 1, 4)) + (Math.random() * 100),
             maxDelay
           );
           
-          console.log(`Scheduling retry #${retryCount} in ${exponentialDelay / 1000} seconds`);
+          console.log(`Scheduling retry #${retryCount} in ${exponentialDelay}ms`);
           
-          // Add a delay before the next retry attempt
+          // Add a minimal delay before the next retry attempt
           setTimeout(() => {
             processPendingOperations();
           }, exponentialDelay);
         } else {
-          // First retry attempt, try again quickly
+          // First retry attempt, try again immediately
           setTimeout(() => {
             processPendingOperations();
-          }, 200); // Faster first retry for better UX
+          }, 10); // Near-instant first retry for better UX
         }
       } else {
         // For non-network errors, remove from queue to prevent infinite retries
@@ -237,12 +237,12 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     
     window.addEventListener('online', handleOnline);
     
-    // Also check periodically
+    // Also check periodically with much faster interval for instant operations
     const interval = setInterval(() => {
       if (navigator.onLine) {
         processPendingOperations();
       }
-    }, 1000); // Check every 1 second for better responsiveness
+    }, 50); // Check every 50ms for near-instant responsiveness
     
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -303,7 +303,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             // Assume first-time user if we can't load lists
             isFirstTimeUser = true;
             try {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              // Immediate retry without delay for better responsiveness
               firebaseLists = await getUserLists(user.id);
               isFirstTimeUser = firebaseLists.length === 0;
               console.log(`Retry: User is first-time: ${isFirstTimeUser}, Firebase lists: ${firebaseLists.length}`);
@@ -678,10 +678,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       // Queue Firebase operations if authenticated - batch them into a single operation
       if (isAuthenticated && user) {
         queueOperation(async () => {
-          // Add a small delay and check state right before execution
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
-          // Check state without triggering re-renders
+          // Process immediately for instant operations
           const currentLists = lists;
           
           // Save all items to Firestore and collect their IDs
