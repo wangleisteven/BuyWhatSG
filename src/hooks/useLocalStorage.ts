@@ -85,7 +85,6 @@ export function useLocalStorage<T>(
       try {
         const authKey = `${key}_auth_${userId}`;
         window.localStorage.setItem(authKey, JSON.stringify(guestData));
-        console.log(`Copied guest data to authenticated storage: ${authKey}`);
       } catch (error) {
         console.warn(`Error copying guest data to authenticated storage:`, error);
       }

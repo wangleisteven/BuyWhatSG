@@ -19,7 +19,7 @@ const PWAUpdateWrapper = () => {
       setNeedRefresh(true);
     },
     onOfflineReady() {
-      console.log('App ready to work offline');
+      // App ready to work offline
     },
   });
   

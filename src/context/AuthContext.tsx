@@ -76,7 +76,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       //   // Try popup first for desktop
         try {
           const result = await signInWithPopup(auth, googleProvider);
-          console.log('Login successful:', result.user);
           setLoading(false);
         } catch (popupError: any) {
           // If popup fails, fallback to redirect

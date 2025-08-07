@@ -63,16 +63,13 @@ const itemToFirestore = (item: ShoppingItem, listId: string, userId: string) => 
 // Get all lists for a user
 export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
   try {
-    console.log('getUserLists: Starting to fetch lists for user:', userId);
     const listsQuery = query(
       collection(db, LISTS_COLLECTION),
       where('userId', '==', userId),
       orderBy('updatedAt', 'desc')
     );
     
-    console.log('getUserLists: Executing query...');
     const listsSnapshot = await getDocs(listsQuery);
-    console.log('getUserLists: Query completed, found', listsSnapshot.docs.length, 'lists');
     const lists: ShoppingList[] = [];
     
     for (const listDoc of listsSnapshot.docs) {
@@ -115,7 +112,6 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
 // Save a list to Firestore
 export const saveListToFirestore = async (list: ShoppingList, userId: string): Promise<string> => {
   try {
-    console.log('saveListToFirestore: Saving list', list.name, 'for user:', userId);
     const listData = listToFirestore(list, userId);
     
     let docRef;
@@ -167,7 +163,6 @@ export const updateListInFirestore = async (listId: string, updates: Partial<Sho
   } catch (error: any) {
     // Check if the error is because the document doesn't exist
     if (error.code === 'not-found' || error.message?.includes('No document to update')) {
-      console.log(`List ${listId} not found in Firestore, creating a new one`);
       // If the document doesn't exist, create a new one
       const listData = listToFirestore({
         ...updates as ShoppingList,
@@ -196,9 +191,8 @@ export const deleteListFromFirestore = async (listId: string, userId: string): P
       try {
         return deleteDoc(doc(db, ITEMS_COLLECTION, itemDoc.id));
       } catch (itemError: any) {
-        // If item doesn't exist, just log and continue
+        // If item doesn't exist, just continue
         if (itemError.code === 'not-found' || itemError.message?.includes('No document to delete')) {
-          console.log(`Item ${itemDoc.id} not found in Firestore, already deleted or never existed`);
           return Promise.resolve(); // Return resolved promise to continue with other deletions
         }
         return Promise.reject(itemError); // Re-throw other errors
@@ -211,9 +205,8 @@ export const deleteListFromFirestore = async (listId: string, userId: string): P
       // Delete the list
       await deleteDoc(doc(db, LISTS_COLLECTION, listId));
     } catch (listError: any) {
-      // If list doesn't exist, just log and continue
+      // If list doesn't exist, just continue
       if (listError.code === 'not-found' || listError.message?.includes('No document to delete')) {
-        console.log(`List ${listId} not found in Firestore, already deleted or never existed`);
         return; // Exit gracefully
       }
       throw listError; // Re-throw other errors
@@ -232,21 +225,6 @@ export const saveItemToFirestore = async (item: ShoppingItem, listId: string, us
     return docRef.id;
   } catch (error: any) {
     console.error('Error saving item to Firestore:', error);
-    
-    // Enhanced error handling for network-related errors
-    const errorMessage = error.message || String(error);
-    if (
-      errorMessage.includes('ERR_BLOCKED_BY_CLIENT') ||
-      errorMessage.includes('network') ||
-      errorMessage.includes('Failed to fetch') ||
-      errorMessage.includes('NetworkError') ||
-      error.code === 'unavailable'
-    ) {
-      console.warn(
-        'Network error detected while saving item. ' +
-        'If this is ERR_BLOCKED_BY_CLIENT, check browser extensions or security software.'
-      );
-    }
     
     throw error;
   }

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -10,7 +9,6 @@ const MePage = () => {
   const { user, logout, loginWithGoogle, loading, isOnline } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
   const { canInstall, isPWA, showInstallPrompt } = usePWA();
-  const [showLocalInstallPrompt, setShowLocalInstallPrompt] = useState(false);
 
   // Handle install PWA
   const handleInstallClick = async () => {
@@ -18,8 +16,7 @@ const MePage = () => {
       try {
         await showInstallPrompt();
       } catch (error) {
-        console.error('Failed to show install prompt:', error);
-        // You could show a user-friendly error message here
+        // Silently handle install prompt errors
       }
     }
   };
@@ -95,16 +92,7 @@ const MePage = () => {
         
       </div>
 
-      {showLocalInstallPrompt && (
-        <div className="install-prompt">
-          <p>To install this app:</p>
-          <ol>
-            <li>Open your browser menu</li>
-            <li>Look for "Install app" or "Add to home screen"</li>
-            <li>Follow the prompts to install</li>
-          </ol>
-        </div>
-      )}
+
 
       {user && (
         <div className="account-section">

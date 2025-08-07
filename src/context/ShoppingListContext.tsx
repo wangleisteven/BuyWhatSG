@@ -169,13 +169,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       
       if (isNetworkError) {
         console.warn('Network error detected. Operation will be retried when connection is restored.');
-        // For ERR_BLOCKED_BY_CLIENT specifically, add more detailed logging
+        // For ERR_BLOCKED_BY_CLIENT specifically, show user alert
         if (errorMessage.includes('ERR_BLOCKED_BY_CLIENT')) {
-          console.warn(
-            'Firebase request was blocked by the client (possibly by an extension or firewall). ' +
-            'This operation will be retried, but you may need to check browser extensions or security software.'
-          );
-          
           // Show alert to user about the blocked client issue
           showAlert({
             type: 'warning',
@@ -213,7 +208,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         }
       } else {
         // For non-network errors, remove from queue to prevent infinite retries
-        console.warn('Non-network error detected. Removing operation from queue to prevent blocking.');
+        // Non-network error detected. Removing operation from queue to prevent blocking.
         setPendingOperations(prev => prev.slice(1));
         
         // Show alert about the error
@@ -297,18 +292,18 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           try {
             firebaseLists = await getUserLists(user.id);
             isFirstTimeUser = firebaseLists.length === 0;
-            console.log(`User is first-time: ${isFirstTimeUser}, Firebase lists: ${firebaseLists.length}`);
+            // User is first-time user check completed
           } catch (getUserError) {
-            console.warn('Error loading user lists from Firebase:', getUserError);
+            // Error loading user lists from Firebase
             // Assume first-time user if we can't load lists
             isFirstTimeUser = true;
             try {
               // Immediate retry without delay for better responsiveness
               firebaseLists = await getUserLists(user.id);
               isFirstTimeUser = firebaseLists.length === 0;
-              console.log(`Retry: User is first-time: ${isFirstTimeUser}, Firebase lists: ${firebaseLists.length}`);
+              // Retry completed
             } catch (retryError) {
-              console.warn('Retry failed, assuming first-time user:', retryError);
+              // Retry failed, assuming first-time user
               isFirstTimeUser = true;
             }
           }
@@ -316,35 +311,35 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           if (isFirstTimeUser) {
             // First-time user: sync non-login state lists to Firebase as initialization
             const guestLists = getGuestData();
-            console.log(`First-time user: syncing ${guestLists.length} guest lists to Firebase`);
+            // First-time user: syncing guest lists to Firebase
             
             try {
               // Copy guest data to authenticated storage
               copyGuestDataToAuth();
               // Sync all guest lists (including education list) to Firebase
               await syncLocalListsToFirestore(guestLists, user.id);
-              console.log('Successfully synced all guest lists to Firebase for first-time user');
+              // Successfully synced all guest lists to Firebase for first-time user
               
               // Set lists from guest data
               // CRITICAL: Don't overwrite state if we have pending operations
               if (pendingOperations.length === 0 && !isProcessingQueue) {
                 setLists(guestLists);
               } else {
-                console.log(`[DEBUG] Auth effect: SKIPPING guest data set - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
+                // SKIPPING guest data set - pending operations exist
               }
             } catch (syncError) {
-              console.warn('Error syncing guest lists to Firebase:', syncError);
+              // Error syncing guest lists to Firebase
               // Even if Firebase sync fails, we still copied the data locally
               // CRITICAL: Don't overwrite state if we have pending operations
               if (pendingOperations.length === 0 && !isProcessingQueue) {
                 setLists(guestLists.length > 0 ? guestLists : [createEducationList()]);
               } else {
-                console.log(`[DEBUG] Auth effect: SKIPPING fallback set - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
+                // SKIPPING fallback set - pending operations exist
               }
             }
           } else {
             // Returning user: merge Firebase lists with current local state to preserve pending changes
-            console.log(`Returning user: loading ${firebaseLists.length} lists from Firebase`);
+            // Returning user: loading lists from Firebase
             
             // Merge Firebase data with current local state to preserve items being processed
             setLists(prevLists => {
@@ -375,14 +370,14 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           // Clear current list to refresh
           setCurrentList(null);
         } catch (error) {
-          console.error('Unexpected error during authentication state change:', error);
+          // Unexpected error during authentication state change
           // Only show error for unexpected issues, not for first-time user scenarios
           const educationList = createEducationList();
           // CRITICAL: Don't overwrite state if we have pending operations
           if (pendingOperations.length === 0 && !isProcessingQueue) {
             setLists([educationList]);
           } else {
-            console.log(`[DEBUG] Auth effect: SKIPPING error fallback - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
+            // SKIPPING error fallback - pending operations exist
           }
           setCurrentList(null);
         } finally {
@@ -408,7 +403,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           if (pendingOperations.length === 0 && !isProcessingQueue) {
             setLists(restoredLists);
           } else {
-            console.log(`[DEBUG] Auth effect: SKIPPING logout restore - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
+            // SKIPPING logout restore - pending operations exist
           }
           
           // Clear current list if it's not in the restored lists
@@ -416,14 +411,14 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             setCurrentList(null);
           }
           
-          console.log(`Restored ${otherGuestLists.length} guest lists after logout`);
+          // Restored guest lists after logout
         } catch (error) {
-          console.error('Error handling logout:', error);
+          // Error handling logout
           // CRITICAL: Don't overwrite state if we have pending operations
           if (pendingOperations.length === 0 && !isProcessingQueue) {
             setLists([createEducationList()]);
           } else {
-            console.log(`[DEBUG] Auth effect: SKIPPING logout error fallback - ${pendingOperations.length} pending operations, processing: ${isProcessingQueue}`);
+            // SKIPPING logout error fallback - pending operations exist
           }
         } finally {
           setIsLoadingData(false);

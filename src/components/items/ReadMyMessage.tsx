@@ -64,7 +64,7 @@ const ReadMyMessage = ({ listId, onClose }: ReadMyMessageProps) => {
         addToast({ message: 'No items could be extracted. Please try rephrasing.', type: 'warning' });
       }
     } catch (error) {
-      console.error('Error processing message:', error);
+      // Error processing message
       addToast({ message: 'Failed to process your message. Please try again.', type: 'error' });
     } finally {
       setIsAnalyzing(false);
@@ -76,7 +76,7 @@ const ReadMyMessage = ({ listId, onClose }: ReadMyMessageProps) => {
       await loginWithGoogle();
       addToast({ message: 'Successfully logged in!', type: 'success' });
     } catch (error) {
-      console.error('Login failed:', error);
+      // Login failed
       addToast({ message: 'Login failed. Please try again.', type: 'error' });
     }
   };

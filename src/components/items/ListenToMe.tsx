@@ -64,8 +64,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
           category: recommendCategory(item.name)
         }));
       } catch (error) {
-        console.warn('Gemini parsing failed, falling back to basic parsing:', error);
-        // Fall through to basic parsing
+        // Fall through to basic parsing if Gemini fails
       }
     }
 
@@ -163,17 +162,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
     // This gives more resolution to lower frequencies where most vocal energy is
     const maxFreqIndex = Math.floor(frequencyArray.length * 0.8); // Use only 80% of frequency range to avoid noise
     
-    // Log debug info occasionally
-    if (Math.random() < 0.02) { // 2% chance to log
-      console.log('Audio analysis:', {
-        rms: rms.toFixed(4),
-        normalizedLevel: normalizedLevel.toFixed(4),
-        freqMaxValue: Math.max(...frequencyArray),
-        freqAvgValue: (frequencyArray.reduce((a, b) => a + b, 0) / frequencyArray.length).toFixed(2),
-        maxFreqIndex,
-        frequencyBinCount: analyserRef.current.frequencyBinCount
-      });
-    }
+    // Audio analysis running
     
     for (let i = 0; i < barCount; i++) {
       // Use exponential distribution for frequency ranges
@@ -224,7 +213,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
   // Start audio recording for Whisper API
   const startRecording = async () => {
     try {
-      console.log('Requesting microphone access...');
+      // Requesting microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: false,
@@ -233,12 +222,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         }
       });
       
-      console.log('Microphone access granted, stream tracks:', stream.getTracks().map(track => ({
-        kind: track.kind,
-        enabled: track.enabled,
-        readyState: track.readyState,
-        label: track.label
-      })));
+      // Microphone access granted
       
       // Set up audio analysis for sound wave visualization
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -246,7 +230,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
       // Resume audio context if it's suspended (required by some browsers)
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
-        console.log('Audio context resumed');
+        // Audio context resumed
       }
       
       const source = audioContextRef.current.createMediaStreamSource(stream);
@@ -257,14 +241,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
       analyserRef.current.maxDecibels = -30;
       source.connect(analyserRef.current);
       
-      console.log('Audio context set up:', {
-        state: audioContextRef.current.state,
-        sampleRate: audioContextRef.current.sampleRate,
-        fftSize: analyserRef.current.fftSize,
-        frequencyBinCount: analyserRef.current.frequencyBinCount,
-        minDecibels: analyserRef.current.minDecibels,
-        maxDecibels: analyserRef.current.maxDecibels
-      });
+      // Audio context set up
       
       // Try to use a compatible format for better transcription
       let options: MediaRecorderOptions = {};
@@ -317,12 +294,12 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         const progress = Math.min(elapsed / RECORDING_DURATION, 1);
         const remainingSeconds = Math.ceil((RECORDING_DURATION - elapsed) / 1000);
         
-        console.log('Timer update:', { elapsed, progress, remainingSeconds, isRecordingRef: isRecordingRef.current });
+        // Timer update
         setRecordingProgress(progress);
         
         if (progress >= 1) {
           // Auto-stop recording after 15 seconds
-          console.log('15 seconds reached, auto-stopping recording');
+          // 15 seconds reached, auto-stopping recording
           stopRecording();
           return;
         }
@@ -339,7 +316,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
       // Also set a hard timeout as backup
       setTimeout(() => {
         if (isRecordingRef.current) {
-          console.log('Backup timer triggered, force stopping recording');
+          // Backup timer triggered, force stopping recording
           stopRecording();
         }
       }, RECORDING_DURATION + 100);
@@ -355,7 +332,7 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
 
   // Stop audio recording
   const stopRecording = () => {
-    console.log('stopRecording called, isRecording:', isRecording, 'mediaRecorder exists:', !!mediaRecorderRef.current);
+    // stopRecording called
     
     // Clean up timers and animation frames first
     if (recordingTimerRef.current) {
@@ -377,10 +354,10 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
     
     // Stop the media recorder if it exists and is in a valid state
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      console.log('Stopping media recorder, state:', mediaRecorderRef.current.state);
+      // Stopping media recorder
       mediaRecorderRef.current.stop();
     } else {
-      console.log('Media recorder not available or already stopped');
+      // Media recorder not available or already stopped
     }
   };
 
@@ -412,16 +389,12 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
     setIsProcessing(true);
     
     try {
-      console.log('Starting transcription...', {
-        blobSize: audioBlob.size,
-        blobType: audioBlob.type,
-        apiKeyConfigured: !!API_CONFIG.OPENAI_API_KEY
-      });
+      // Starting transcription
 
       const whisperService = new WhisperService(API_CONFIG.OPENAI_API_KEY);
       const transcription = await whisperService.transcribeAudio(audioBlob);
       
-      console.log('Transcription result:', transcription);
+      // Transcription completed
       
       if (!transcription || transcription.trim().length === 0) {
         addToast({
