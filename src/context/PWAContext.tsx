@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { isStandalone } from '../utils/helpers';
 import { updateManifestForCurrentDomain } from '../utils/manifestUtils';
 import { handleDeepLink, registerUrlHandler, markPWAAsInstalled, showOpenInAppPrompt } from '../utils/deepLinkHandler';
@@ -63,11 +63,6 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     if (window.matchMedia('(display-mode: standalone)').matches || 
         (window.navigator as any).standalone === true) {
       setIsPWA(true);
-    }
-
-    // For ngrok domains, add additional checks
-    if (window.location.hostname.includes('ngrok-free.app')) {
-      console.log('Running on ngrok domain, ensuring PWA compatibility');
     }
 
     // Initialize deep linking

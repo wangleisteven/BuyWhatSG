@@ -58,10 +58,10 @@ const ReadMyMessage = ({ listId, onClose }: ReadMyMessageProps) => {
         }));
         
         await addItems(listId, extractedItems);
-        addToast({ message: `Successfully added ${extractedItems.length} items from your message!`, type: 'success' });
+        addToast({ message: `Successfully added ${extractedItems.length} items!`, type: 'success' });
         onClose();
       } else {
-        addToast({ message: 'No items could be extracted from your message. Please try rephrasing.', type: 'warning' });
+        addToast({ message: 'No items could be extracted. Please try rephrasing.', type: 'warning' });
       }
     } catch (error) {
       console.error('Error processing message:', error);

@@ -166,19 +166,16 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
 
       // Add all items to the shopping list in batch
         const itemsToAdd = extractedItems.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          category: item.category,
+          name: item.name || 'Unknown Item',
+          quantity: item.quantity || 1,
+          category: recommendCategory(item.name || 'Unknown Item'),
           completed: false
         }));
         
         await addItems(listId, itemsToAdd);
 
       setIsAnalyzing(false);
-      addToast({
-        message: 'Items imported successfully!',
-        type: 'success'
-      });
+      addToast({ message: `Successfully added ${itemsToAdd.length} items!`, type: 'success' });
       
       // Close modal immediately after success
       onClose();

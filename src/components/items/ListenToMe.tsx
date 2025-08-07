@@ -446,18 +446,17 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
 
       // Add all items to the list in batch
       const itemsToAdd = extractedItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        category: item.category,
-        completed: false,
-        photoURL: ''
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity || 1,
+        category: recommendCategory(item.name || 'Unknown Item'),
+        completed: false
       }));
       
       await addItems(listId, itemsToAdd);
 
       setIsProcessing(false);
       addToast({
-        message: `Successfully added ${extractedItems.length} item(s) to your list!`,
+        message: `Successfully added ${itemsToAdd.length} items!`,
         type: 'success'
       });
       

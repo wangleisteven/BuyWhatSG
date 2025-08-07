@@ -1,7 +1,6 @@
 // Utility to generate dynamic manifest based on current domain
 export const generateManifestForDomain = () => {
   const currentOrigin = window.location.origin;
-  const isNgrok = window.location.hostname.includes('ngrok-free.app');
   
   return {
     name: "BuyWhatSG - Shopping List App",
