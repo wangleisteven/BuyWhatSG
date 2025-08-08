@@ -5,16 +5,26 @@
  * Run with: node scripts/updateStores.js
  */
 
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// OneMap API credentials
-const ONEMAP_EMAIL = 'wanglei.steven@gmail.com';
-const ONEMAP_PASSWORD = '1qaz@WSX3edc$RFV';
+// OneMap API credentials from environment variables
+const ONEMAP_EMAIL = process.env.ONEMAP_EMAIL;
+const ONEMAP_PASSWORD = process.env.ONEMAP_PASSWORD;
+
+if (!ONEMAP_EMAIL || !ONEMAP_PASSWORD) {
+  console.error('❌ OneMap credentials not found in environment variables');
+  console.error('Please set ONEMAP_EMAIL and ONEMAP_PASSWORD in your .env.local file');
+  process.exit(1);
+}
 
 /**
  * Get OneMap API access token
