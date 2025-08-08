@@ -2,6 +2,7 @@ import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff } from 'react-ic
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePWA } from '../../context/PWAContext';
+import { LocationNotificationSettings } from '../location/LocationNotificationSettings';
 import './MePage.css';
 import './Me.css';
 
@@ -91,6 +92,9 @@ const MePage = () => {
         )}
         
       </div>
+
+      {/* Location Notifications Section */}
+      <LocationNotificationSettings className="mt-6" />
 
 
 

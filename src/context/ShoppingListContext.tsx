@@ -673,8 +673,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       // Queue Firebase operations if authenticated - batch them into a single operation
       if (isAuthenticated && user) {
         queueOperation(async () => {
-          // Process immediately for instant operations
-          const currentLists = lists;
           
           // Save all items to Firestore and collect their IDs
           const firestoreUpdates: { itemId: string; firestoreId: string }[] = [];

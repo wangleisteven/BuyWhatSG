@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "buywhatsg"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "buywhatsg-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]
