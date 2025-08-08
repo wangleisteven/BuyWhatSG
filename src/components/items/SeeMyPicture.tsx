@@ -52,8 +52,7 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
   const parseItemsFromText = async (text: string): Promise<ExtractedItem[]> => {
     // Check if Gemini API key is configured
     if (!API_CONFIG.GEMINI_API_KEY) {
-      // Fallback to basic parsing if no API key
-      return parseItemsBasic(text);
+      return [];
     }
 
     try {
@@ -61,76 +60,15 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
       const geminiItems = await geminiService.parseItemsFromText(text);
       
       return geminiItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        category: recommendCategory(item.name)
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity || 1,
+        category: recommendCategory(item.name || 'Unknown Item'),
+        completed: false
       }));
     } catch (error) {
-      console.error('Gemini parsing failed, falling back to basic parsing:', error);
-      // Fallback to basic parsing if Gemini fails
-      return parseItemsBasic(text);
+      console.error('Gemini parsing failed:', error);
+      return [];
     }
-  };
-
-  // Basic fallback parsing function
-  const parseItemsBasic = (text: string): ExtractedItem[] => {
-    const lines = text.split('\n').filter(line => line.trim());
-    const items: ExtractedItem[] = [];
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
-
-      // Try to extract quantity and item name
-      let quantity = 1;
-      let itemName = trimmedLine;
-
-      // Pattern 1: "2 apples" or "3 bananas"
-      const pattern1 = /^(\d+)\s+(.+)$/;
-      const match1 = trimmedLine.match(pattern1);
-      if (match1) {
-        quantity = parseInt(match1[1]);
-        itemName = match1[2];
-      } else {
-        // Pattern 2: "tomatoes - 3" or "rice 1kg"
-        const pattern2 = /^(.+?)\s*[-–]\s*(\d+)$/;
-        const match2 = trimmedLine.match(pattern2);
-        if (match2) {
-          quantity = parseInt(match2[2]);
-          itemName = match2[1];
-        } else {
-          // Pattern 3: "1kg rice" or "500g chicken"
-          const pattern3 = /^(\d+(?:\.\d+)?)\s*(kg|g|lbs?|oz|dozen|gallon|loaves?)\s+(.+)$/i;
-          const match3 = trimmedLine.match(pattern3);
-          if (match3) {
-            quantity = parseFloat(match3[1]);
-            const unit = match3[2];
-            itemName = match3[3];
-            
-            // Convert units to more readable format
-            if (unit.toLowerCase() === 'dozen') {
-              quantity = quantity * 12;
-            } else if (unit.toLowerCase().includes('loav')) {
-              quantity = Math.round(quantity);
-            }
-          }
-        }
-      }
-
-      // Clean up item name
-      itemName = itemName.replace(/[^\w\s]/g, '').trim();
-      
-      if (itemName) {
-        const category = recommendCategory(itemName);
-        items.push({
-          name: itemName,
-          quantity: Math.max(1, Math.round(quantity)),
-          category
-        });
-      }
-    }
-
-    return items;
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,14 +103,14 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
       }
 
       // Add all items to the shopping list in batch
-        const itemsToAdd = extractedItems.map(item => ({
-          name: item.name || 'Unknown Item',
-          quantity: item.quantity || 1,
-          category: recommendCategory(item.name || 'Unknown Item'),
-          completed: false
-        }));
-        
-        await addItems(listId, itemsToAdd);
+      const itemsToAdd = extractedItems.map(item => ({
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity || 1,
+        category: recommendCategory(item.name || 'Unknown Item'),
+        completed: false
+      }));
+      
+      await addItems(listId, itemsToAdd);
 
       setIsAnalyzing(false);
       addToast({ message: `Successfully added ${itemsToAdd.length} items!`, type: 'success' });

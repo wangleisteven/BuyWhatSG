@@ -4,7 +4,6 @@ import {
   getDocs, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   setDoc, 
   query, 
   where, 
@@ -75,6 +74,11 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
     for (const listDoc of listsSnapshot.docs) {
       const listData = listDoc.data();
       
+      // Skip deleted lists
+      if (listData.deleted === true) {
+        continue;
+      }
+      
       // Get items for this list
       const itemsQuery = query(
         collection(db, ITEMS_COLLECTION),
@@ -84,14 +88,16 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
       );
       
       const itemsSnapshot = await getDocs(itemsQuery);
-      const items: ShoppingItem[] = itemsSnapshot.docs.map(itemDoc => {
-        const data = itemDoc.data();
-        return {
-          ...data,
-          id: data.id || itemDoc.id, // Use the original id if available, otherwise use Firestore id
-          firestoreId: itemDoc.id // Always store the Firestore document ID
-        } as ShoppingItem;
-      });
+      const items: ShoppingItem[] = itemsSnapshot.docs
+        .map(itemDoc => {
+          const data = itemDoc.data();
+          return {
+            ...data,
+            id: data.id || itemDoc.id, // Use the original id if available, otherwise use Firestore id
+            firestoreId: itemDoc.id // Always store the Firestore document ID
+          } as ShoppingItem;
+        })
+        .filter(item => item.deleted !== true); // Filter out deleted items
       
       lists.push({
         ...listData,
@@ -104,7 +110,6 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
     
     return lists;
   } catch (error) {
-    console.error('Error getting user lists:', error);
     throw error;
   }
 };
@@ -179,7 +184,7 @@ export const updateListInFirestore = async (listId: string, updates: Partial<Sho
 // Delete a list from Firestore
 export const deleteListFromFirestore = async (listId: string, userId: string): Promise<void> => {
   try {
-    // Delete all items in the list
+    // Soft delete all items in the list
     const itemsQuery = query(
       collection(db, ITEMS_COLLECTION),
       where('listId', '==', listId),
@@ -187,32 +192,37 @@ export const deleteListFromFirestore = async (listId: string, userId: string): P
     );
     
     const itemsSnapshot = await getDocs(itemsQuery);
-    const deletePromises = itemsSnapshot.docs.map(itemDoc => {
+    const updatePromises = itemsSnapshot.docs.map(itemDoc => {
       try {
-        return deleteDoc(doc(db, ITEMS_COLLECTION, itemDoc.id));
+        return updateDoc(doc(db, ITEMS_COLLECTION, itemDoc.id), {
+          deleted: true,
+          updatedAt: serverTimestamp()
+        });
       } catch (itemError: any) {
         // If item doesn't exist, just continue
-        if (itemError.code === 'not-found' || itemError.message?.includes('No document to delete')) {
-          return Promise.resolve(); // Return resolved promise to continue with other deletions
+        if (itemError.code === 'not-found') {
+          return Promise.resolve(); // Return resolved promise to continue with other updates
         }
         return Promise.reject(itemError); // Re-throw other errors
       }
     });
     
-    await Promise.all(deletePromises);
+    await Promise.all(updatePromises);
     
     try {
-      // Delete the list
-      await deleteDoc(doc(db, LISTS_COLLECTION, listId));
+      // Soft delete the list
+      await updateDoc(doc(db, LISTS_COLLECTION, listId), {
+        deleted: true,
+        updatedAt: serverTimestamp()
+      });
     } catch (listError: any) {
       // If list doesn't exist, just continue
-      if (listError.code === 'not-found' || listError.message?.includes('No document to delete')) {
+      if (listError.code === 'not-found') {
         return; // Exit gracefully
       }
       throw listError; // Re-throw other errors
     }
   } catch (error) {
-    console.error('Error deleting list from Firestore:', error);
     throw error;
   }
 };
@@ -269,15 +279,15 @@ export const updateItemInFirestore = async (itemId: string, updates: Partial<Sho
 // Delete an item from Firestore
 export const deleteItemFromFirestore = async (itemId: string, _userId: string): Promise<void> => {
   try {
-    await deleteDoc(doc(db, ITEMS_COLLECTION, itemId));
+    await updateDoc(doc(db, ITEMS_COLLECTION, itemId), {
+      deleted: true,
+      updatedAt: serverTimestamp()
+    });
   } catch (error: any) {
     // Check if the error is because the document doesn't exist
-    if (error.code === 'not-found' || error.message?.includes('No document to delete')) {
-      console.log(`Item ${itemId} not found in Firestore, already deleted or never existed`);
+    if (error.code === 'not-found') {
       return; // Exit gracefully if document doesn't exist
     }
-    
-    console.error('Error deleting item from Firestore:', error);
     
     // Enhanced error handling for network-related errors
     const errorMessage = error.message || String(error);
@@ -288,10 +298,7 @@ export const deleteItemFromFirestore = async (itemId: string, _userId: string): 
       errorMessage.includes('NetworkError') ||
       error.code === 'unavailable'
     ) {
-      console.warn(
-        'Network error detected while deleting item. ' +
-        'If this is ERR_BLOCKED_BY_CLIENT, check browser extensions or security software.'
-      );
+      // Network error during soft delete
     }
     
     throw error;

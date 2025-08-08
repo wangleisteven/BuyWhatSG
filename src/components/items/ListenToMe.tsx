@@ -64,68 +64,13 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
           category: recommendCategory(item.name)
         }));
       } catch (error) {
-        // Fall through to basic parsing if Gemini fails
-      }
-    }
-
-    // Fallback to basic parsing
-    const items: ExtractedItem[] = [];
-    
-    // Split by common separators and clean up
-    const segments = text
-      .toLowerCase()
-      .split(/[,\.\n]|and|also|plus|then|next/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-
-    for (const segment of segments) {
-      // Skip common filler words
-      if (/^(i need|i want|get|buy|purchase|add|put)$/i.test(segment.trim())) {
-        continue;
-      }
-
-      let quantity = 1;
-      let itemName = segment;
-
-      // Pattern 1: "two apples" or "three bananas"
-      const numberWords: { [key: string]: number } = {
-        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
-        'eleven': 11, 'twelve': 12, 'dozen': 12, 'half dozen': 6
-      };
-
-      for (const [word, num] of Object.entries(numberWords)) {
-        if (segment.startsWith(word + ' ')) {
-          quantity = num;
-          itemName = segment.substring(word.length + 1);
-          break;
-        }
-      }
-
-      // Pattern 2: "2 apples" or "3 bananas"
-      const digitMatch = segment.match(/^(\d+)\s+(.+)$/);
-      if (digitMatch) {
-        quantity = parseInt(digitMatch[1]);
-        itemName = digitMatch[2];
-      }
-
-      // Clean up item name
-      itemName = itemName
-        .replace(/^(some|a|an|the)\s+/i, '')
-        .replace(/\s+(please|thanks|thank you)$/i, '')
-        .trim();
-
-      if (itemName && itemName.length > 1) {
-        const category = recommendCategory(itemName);
-        items.push({
-          name: itemName,
-          quantity: Math.max(1, quantity),
-          category
+        addToast({
+          message: 'Oops! Failed to recognize items, please try again later.',
+          type: 'warning'
         });
       }
     }
-
-    return items;
+    return [];
   };
 
   // Audio level analysis for sound wave visualization
@@ -292,7 +237,6 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
       const updateProgress = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / RECORDING_DURATION, 1);
-        const remainingSeconds = Math.ceil((RECORDING_DURATION - elapsed) / 1000);
         
         // Timer update
         setRecordingProgress(progress);
