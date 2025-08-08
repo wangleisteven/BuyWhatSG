@@ -1,4 +1,23 @@
 import { useState, useEffect } from 'react';
+import type { ShoppingList } from '../types/shopping';
+
+/**
+ * Filter out deleted lists and items from shopping lists data
+ */
+const filterDeletedData = <T>(data: T): T => {
+  // Check if data is an array of shopping lists
+  if (Array.isArray(data) && data.length > 0 && data[0] && typeof data[0] === 'object' && 'items' in data[0]) {
+    const lists = data as unknown as ShoppingList[];
+    const filteredLists = lists
+      .filter(list => list.deleted !== true) // Filter out deleted lists
+      .map(list => ({
+        ...list,
+        items: list.items.filter(item => item.deleted !== true) // Filter out deleted items
+      }));
+    return filteredLists as unknown as T;
+  }
+  return data;
+};
 
 /**
  * Custom hook to persist state in local storage with support for authenticated and non-authenticated states
@@ -28,7 +47,11 @@ export function useLocalStorage<T>(
 
     try {
       const item = window.localStorage.getItem(storageKey);
-      return item ? (JSON.parse(item) as T) : initialValue;
+      if (item) {
+        const parsedData = JSON.parse(item) as T;
+        return filterDeletedData(parsedData);
+      }
+      return initialValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${storageKey}":`, error);
       return initialValue;
@@ -70,7 +93,11 @@ export function useLocalStorage<T>(
     try {
       const guestKey = `${key}_guest`;
       const item = window.localStorage.getItem(guestKey);
-      return item ? (JSON.parse(item) as T) : initialValue;
+      if (item) {
+        const parsedData = JSON.parse(item) as T;
+        return filterDeletedData(parsedData);
+      }
+      return initialValue;
     } catch (error) {
       console.warn(`Error reading guest localStorage key "${key}_guest":`, error);
       return initialValue;
@@ -115,7 +142,8 @@ export function useLocalStorage<T>(
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === storageKey && e.newValue) {
-        setStoredValue(JSON.parse(e.newValue) as T);
+        const parsedData = JSON.parse(e.newValue) as T;
+        setStoredValue(filterDeletedData(parsedData));
       }
     };
 
