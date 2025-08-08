@@ -94,7 +94,7 @@ const MePage = () => {
       </div>
 
       {/* Location Notifications Section */}
-      <LocationNotificationSettings className="mt-6" />
+      <LocationNotificationSettings />
 
 
 
