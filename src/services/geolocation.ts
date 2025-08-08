@@ -56,43 +56,44 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
       return;
     }
 
-    // Progressive fallback strategy
-    const tryGetLocation = (options: PositionOptions, isLastAttempt = false) => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          });
-        },
-        (error) => {
-          if (isLastAttempt) {
-            reject(error);
-            return;
-          }
-
-          // Try with more lenient settings
-          if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
-            tryGetLocation({
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (error) => {
+        // Try again with less strict settings if high accuracy fails
+        if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+              });
+            },
+            (fallbackError) => {
+              reject(fallbackError);
+            },
+            {
               enableHighAccuracy: false,
-              timeout: 45000, // 45 seconds - very lenient
-              maximumAge: 900000, // 15 minutes - accept very old positions
-            }, true);
-          } else {
-            reject(error);
-          }
-        },
-        options
-      );
-    };
-
-    // Start with moderate settings (not too aggressive)
-    tryGetLocation({
-      enableHighAccuracy: false, // Start with lower accuracy for better reliability
-      timeout: 30000, // 30 seconds
-      maximumAge: 300000, // 5 minutes
-    });
+              timeout: 60000, // 60 seconds
+              maximumAge: 600000, // 10 minutes
+            }
+          );
+        } else {
+          reject(error);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000, // 30 seconds
+        maximumAge: 300000, // 5 minutes
+      }
+    );
   });
 };
 
@@ -128,9 +129,9 @@ export const watchLocation = (
       }
     },
     {
-      enableHighAccuracy: false, // Use less aggressive settings for continuous tracking
-      timeout: 45000, // 45 seconds - very lenient for continuous tracking
-      maximumAge: 600000, // 10 minutes - allow much older cached positions
+      enableHighAccuracy: false,
+      timeout: 60000, // 60 seconds - much more lenient
+      maximumAge: 300000, // 5 minutes - allow older cached positions
     }
   );
 };
