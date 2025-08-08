@@ -91,12 +91,12 @@ const MePage = () => {
           </div>
         )}
         
-      </div>
+
 
       {/* Location Notifications Section */}
       <LocationNotificationSettings />
 
-
+      </div>
 
       {user && (
         <div className="account-section">

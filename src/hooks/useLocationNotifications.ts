@@ -96,17 +96,21 @@ export const useLocationNotifications = (
     
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        errorMessage = 'Location access denied by user';
+        errorMessage = 'Location access denied. Please enable location services in your browser settings.';
         break;
       case error.POSITION_UNAVAILABLE:
-        errorMessage = 'Location information unavailable';
+        errorMessage = 'Location unavailable. Please check that location services are enabled on your device and try again.';
         break;
       case error.TIMEOUT:
-        errorMessage = 'Location request timed out';
+        errorMessage = 'Location request timed out. Please try again.';
+        break;
+      default:
+        errorMessage = 'Unable to access location. Please ensure location services are enabled.';
         break;
     }
     
     setError(errorMessage);
+    setIsTracking(false);
     console.error('Geolocation error:', error);
   }, []);
 
@@ -124,9 +128,15 @@ export const useLocationNotifications = (
       watchIdRef.current = watchId;
       setIsTracking(true);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
-      setError(errorMessage);
-      console.error('Failed to start location tracking:', error);
+      // Handle GeolocationPositionError specifically
+      if (error && typeof error === 'object' && 'code' in error) {
+        handleLocationError(error as GeolocationPositionError);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
+        setError(errorMessage);
+        setIsTracking(false);
+        console.error('Failed to start location tracking:', error);
+      }
     }
   }, [handleLocationUpdate, handleLocationError]);
 
