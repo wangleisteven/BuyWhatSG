@@ -103,7 +103,7 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .info-button {
           background: none;
           border: none;
