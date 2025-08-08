@@ -16,7 +16,6 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
   const {
     isTracking,
     permissionStatus,
-    error,
     startTracking,
     stopTracking,
     requestPermissions,
@@ -75,16 +74,8 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
               <div className="toggle-knob"></div>
             </div>
           </button>
-  </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="error-message">
-          <span className="error-icon">⚠️</span>
-          <span>{error}</span>
         </div>
-      )}
+
 
       {/* Info Popup */}
       {showInfoPopup && (
@@ -111,23 +102,6 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
       )}
 
       <style>{`
-        .error-message {
-          background-color: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: var(--radius-md);
-          padding: var(--spacing-md);
-          margin-top: var(--spacing-md);
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-sm);
-          color: #dc2626;
-          font-size: var(--font-size-sm);
-        }
-
-        .error-icon {
-          font-size: 16px;
-        }
-
         .info-button {
           background: none;
           border: none;

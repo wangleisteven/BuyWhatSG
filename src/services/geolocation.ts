@@ -65,11 +65,32 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
         });
       },
       (error) => {
-        reject(error);
+        // Try again with less strict settings if high accuracy fails
+        if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+              });
+            },
+            (fallbackError) => {
+              reject(fallbackError);
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 15000,
+              maximumAge: 600000, // 10 minutes
+            }
+          );
+        } else {
+          reject(error);
+        }
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 8000,
         maximumAge: 300000, // 5 minutes
       }
     );
@@ -98,11 +119,19 @@ export const watchLocation = (
         accuracy: position.coords.accuracy,
       });
     },
-    errorCallback,
+    (error) => {
+      // Log the error for debugging
+      console.warn('Geolocation watch error:', error.message, 'Code:', error.code);
+      
+      // Call the error callback if provided
+      if (errorCallback) {
+        errorCallback(error);
+      }
+    },
     {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000, // 1 minute
+      enableHighAccuracy: false, // Use less aggressive settings for continuous tracking
+      timeout: 15000,
+      maximumAge: 120000, // 2 minutes
     }
   );
 };

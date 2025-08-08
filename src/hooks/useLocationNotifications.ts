@@ -96,47 +96,56 @@ export const useLocationNotifications = (
     
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+        errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
         break;
       case error.POSITION_UNAVAILABLE:
-        errorMessage = 'Location unavailable. Please check that location services are enabled on your device and try again.';
+        errorMessage = 'Location temporarily unavailable. Please try again in a moment.';
         break;
       case error.TIMEOUT:
-        errorMessage = 'Location request timed out. Please try again.';
+        errorMessage = 'Location request timed out. Please check your connection and try again.';
         break;
       default:
-        errorMessage = 'Unable to access location. Please ensure location services are enabled.';
+        errorMessage = 'Unable to determine your location. Please try again.';
         break;
     }
     
     setError(errorMessage);
-    setIsTracking(false);
-    console.error('Geolocation error:', error);
+    console.warn('Geolocation error:', error.message, 'Code:', error.code);
+    
+    // Don't stop tracking completely on temporary errors
+    if (error.code !== error.PERMISSION_DENIED) {
+      // Keep tracking enabled but clear current location
+      setCurrentLocation(null);
+      setNearbyStores([]);
+    } else {
+      // Only stop tracking if permission is explicitly denied
+      setIsTracking(false);
+    }
   }, []);
 
   // Start location tracking
   const startTracking = useCallback(async () => {
     try {
       setError(null);
+      setIsTracking(true);
       
-      // Get initial location
-      const initialLocation = await getCurrentLocation();
-      handleLocationUpdate(initialLocation);
-      
-      // Start watching location
+      // Start watching location immediately (don't wait for initial location)
       const watchId = watchLocation(handleLocationUpdate, handleLocationError);
       watchIdRef.current = watchId;
-      setIsTracking(true);
-    } catch (error) {
-      // Handle GeolocationPositionError specifically
-      if (error && typeof error === 'object' && 'code' in error) {
-        handleLocationError(error as GeolocationPositionError);
-      } else {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
-        setError(errorMessage);
-        setIsTracking(false);
-        console.error('Failed to start location tracking:', error);
+      
+      // Try to get initial location, but don't fail if it doesn't work
+      try {
+        const initialLocation = await getCurrentLocation();
+        handleLocationUpdate(initialLocation);
+      } catch (locationError) {
+        console.warn('Initial location failed, but watching will continue:', locationError);
+        // The watch will handle subsequent location attempts
       }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
+      setError(errorMessage);
+      setIsTracking(false);
+      console.error('Failed to start location tracking:', error);
     }
   }, [handleLocationUpdate, handleLocationError]);
 
