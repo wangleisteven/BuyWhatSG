@@ -65,31 +65,10 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
         });
       },
       (error) => {
-        // Try again with less strict settings if high accuracy fails
-        if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-              });
-            },
-            (fallbackError) => {
-              reject(fallbackError);
-            },
-            {
-              enableHighAccuracy: false,
-              timeout: 60000, // 60 seconds
-              maximumAge: 600000, // 10 minutes
-            }
-          );
-        } else {
-          reject(error);
-        }
+        reject(error);
       },
       {
-        enableHighAccuracy: true,
+        enableHighAccuracy: false, // Use standard accuracy to avoid CoreLocation errors
         timeout: 30000, // 30 seconds
         maximumAge: 300000, // 5 minutes
       }

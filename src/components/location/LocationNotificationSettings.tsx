@@ -28,14 +28,28 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
     if (isTracking) {
       stopTracking();
     } else {
-      // Request permissions first if not granted
-      if (permissionStatus !== 'granted' || Notification.permission !== 'granted') {
-        await requestPermissions();
-      }
-      
-      // Start tracking if permissions are granted
-      if (permissionStatus === 'granted' && Notification.permission === 'granted') {
-        await startTracking();
+      try {
+        // Request permissions first if not granted
+        if (permissionStatus !== 'granted' || Notification.permission !== 'granted') {
+          await requestPermissions();
+          // Wait a moment for permission state to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Check permissions again after requesting
+        const currentNotificationPermission = Notification.permission;
+        
+        // Start tracking if permissions are granted
+        if (permissionStatus === 'granted' && currentNotificationPermission === 'granted') {
+          await startTracking();
+        } else {
+          console.warn('Permissions not granted:', { 
+            permissionStatus, 
+            notificationPermission: currentNotificationPermission 
+          });
+        }
+      } catch (error) {
+        console.error('Error toggling tracking:', error);
       }
     }
   };
