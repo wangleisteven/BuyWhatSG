@@ -46,6 +46,31 @@ export const calculateDistance = (
 };
 
 /**
+ * Check if geolocation permissions are granted
+ * @returns Promise with permission status
+ */
+export const checkGeolocationPermission = async (): Promise<PermissionState> => {
+  if (!navigator.geolocation) {
+    throw new Error('Geolocation is not supported by this browser');
+  }
+
+  if (!navigator.permissions) {
+    // Fallback for browsers without permissions API
+    // Return 'prompt' to indicate we need to request permission
+    return 'prompt';
+  }
+
+  try {
+    const permission = await navigator.permissions.query({ name: 'geolocation' });
+    return permission.state;
+  } catch (error) {
+    console.warn('Failed to query geolocation permission:', error);
+    // Return 'prompt' if we can't determine the permission state
+    return 'prompt';
+  }
+};
+
+/**
  * Get current user location using the Geolocation API
  * @returns Promise with user's current position
  */
@@ -65,12 +90,33 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
         });
       },
       (error) => {
-        reject(error);
+        // Try again with less strict settings if high accuracy fails
+        if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+              });
+            },
+            (fallbackError) => {
+              reject(fallbackError);
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 60000, // 60 seconds
+              maximumAge: 600000, // 10 minutes
+            }
+          );
+        } else {
+          reject(error);
+        }
       },
       {
-        enableHighAccuracy: false, // Use standard accuracy to avoid CoreLocation errors
-        timeout: 30000, // 30 seconds
-        maximumAge: 300000, // 5 minutes
+        enableHighAccuracy: false, // Less strict for better compatibility
+        timeout: 15000, // 15 seconds - shorter timeout
+        maximumAge: 600000, // 10 minutes - allow older positions
       }
     );
   });
@@ -108,9 +154,9 @@ export const watchLocation = (
       }
     },
     {
-      enableHighAccuracy: false,
-      timeout: 60000, // 60 seconds - much more lenient
-      maximumAge: 300000, // 5 minutes - allow older cached positions
+      enableHighAccuracy: false, // Disable high accuracy for better compatibility
+      timeout: 30000, // 30 seconds - reasonable timeout
+      maximumAge: 600000, // 10 minutes - allow older cached positions
     }
   );
 };

@@ -91,23 +91,12 @@
 .toggle-button {
   background: none;
   border: none;
-  padding: 4px; /* Add padding for better touch targets */
+  padding: 0;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent; /* Remove iOS tap highlight */
-  touch-action: manipulation; /* Improve touch responsiveness */
-  min-width: 58px; /* Ensure minimum touch target size */
-  min-height: 32px; /* Ensure minimum touch target size */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .toggle-button:focus {
   outline: none;
-}
-
-.toggle-button:active {
-  transform: scale(0.98); /* Visual feedback on press */
 }
 
 .toggle-slider {

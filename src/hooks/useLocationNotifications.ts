@@ -5,6 +5,7 @@ import {
   watchLocation,
   clearLocationWatch,
   getNearbyStores,
+  checkGeolocationPermission,
   type GeolocationPosition,
   type FairPriceStore,
 } from '../services/geolocation';
@@ -20,14 +21,17 @@ export interface LocationNotificationState {
   currentLocation: GeolocationPosition | null;
   nearbyStores: FairPriceStore[];
   permissionStatus: NotificationPermission | null;
+  geolocationPermissionStatus: PermissionState | null;
   error: string | null;
+  userPreference: boolean;
 }
 
 export interface LocationNotificationActions {
   startTracking: () => Promise<void>;
   stopTracking: () => void;
-  requestPermissions: () => Promise<void>;
+  requestPermissions: () => Promise<{ notification: NotificationPermission; geolocation: PermissionState }>;
   checkNearbyStores: () => void;
+  setUserPreference: (enabled: boolean) => void;
 }
 
 export const useLocationNotifications = (
@@ -38,17 +42,38 @@ export const useLocationNotifications = (
   const [currentLocation, setCurrentLocation] = useState<GeolocationPosition | null>(null);
   const [nearbyStores, setNearbyStores] = useState<FairPriceStore[]>([]);
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | null>(null);
+  const [geolocationPermissionStatus, setGeolocationPermissionStatus] = useState<PermissionState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [userPreference, setUserPreference] = useState(() => {
+    const saved = localStorage.getItem('trackNotifyPreference');
+    return saved ? JSON.parse(saved) : false;
+  });
   
   const watchIdRef = useRef<number | null>(null);
   const lastNotificationStoreRef = useRef<string | null>(null);
 
-  // Check initial notification permission
+  // Check initial permissions
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermissionStatus(Notification.permission);
-    }
+    const checkInitialPermissions = async () => {
+      // Check notification permission
+      if ('Notification' in window) {
+        setPermissionStatus(Notification.permission);
+      }
+      
+      // Check geolocation permission
+      try {
+        const geoPermission = await checkGeolocationPermission();
+        setGeolocationPermissionStatus(geoPermission);
+      } catch (error) {
+        console.warn('Failed to check geolocation permission:', error);
+        setGeolocationPermissionStatus('denied');
+      }
+    };
+    
+    checkInitialPermissions();
   }, []);
+  
+
 
   // Handle location updates
   const handleLocationUpdate = useCallback(
@@ -133,14 +158,13 @@ export const useLocationNotifications = (
       const watchId = watchLocation(handleLocationUpdate, handleLocationError);
       watchIdRef.current = watchId;
       
-      // Try to get initial location, but don't fail if it doesn't work
-      try {
-        const initialLocation = await getCurrentLocation();
-        handleLocationUpdate(initialLocation);
-      } catch (locationError) {
-        console.warn('Initial location failed, but watching will continue:', locationError);
-        // The watch will handle subsequent location attempts
-      }
+      // Try to get initial location in background, but don't block the UI
+      getCurrentLocation()
+        .then(handleLocationUpdate)
+        .catch((locationError) => {
+          console.warn('Initial location failed, but watching will continue:', locationError);
+          // The watch will handle subsequent location attempts
+        });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
       setError(errorMessage);
@@ -161,19 +185,51 @@ export const useLocationNotifications = (
     setError(null);
   }, []);
 
-  // Request notification permissions
-  const requestPermissions = useCallback(async () => {
+  // Request both notification and geolocation permissions
+  const requestPermissions = useCallback(async (): Promise<{ notification: NotificationPermission; geolocation: PermissionState }> => {
     try {
-      const permission = await requestNotificationPermission();
-      setPermissionStatus(permission);
-      
-      if (permission === 'denied') {
-        setError('Notification permission denied. Please enable notifications in browser settings.');
+      // Force notification permission request (especially important for mobile)
+      let notificationPermission: NotificationPermission;
+      if (Notification.permission === 'default') {
+        notificationPermission = await requestNotificationPermission();
+      } else {
+        notificationPermission = Notification.permission;
       }
+      setPermissionStatus(notificationPermission);
+      
+      // Request geolocation permission with better error handling
+      let geoPermission: PermissionState;
+      try {
+        // Use a shorter timeout for permission request
+        const locationPromise = getCurrentLocation();
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Location request timeout')), 10000);
+        });
+        
+        await Promise.race([locationPromise, timeoutPromise]);
+        geoPermission = await checkGeolocationPermission();
+      } catch (error) {
+        // If getCurrentLocation fails, check the actual permission state
+        try {
+          geoPermission = await checkGeolocationPermission();
+        } catch {
+          geoPermission = 'denied';
+        }
+      }
+      setGeolocationPermissionStatus(geoPermission);
+      
+      if (notificationPermission === 'denied') {
+        setError('Notification permission denied. Please enable notifications in browser settings.');
+      } else if (geoPermission === 'denied') {
+        setError('Location permission denied. Please enable location access in browser settings.');
+      }
+      
+      return { notification: notificationPermission, geolocation: geoPermission };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to request notification permission';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to request permissions';
       setError(errorMessage);
-      console.error('Failed to request notification permission:', error);
+      console.error('Failed to request permissions:', error);
+      return { notification: 'denied', geolocation: 'denied' };
     }
   }, []);
 
@@ -184,6 +240,23 @@ export const useLocationNotifications = (
       setNearbyStores(nearby);
     }
   }, [currentLocation]);
+
+  const handleSetUserPreference = useCallback((enabled: boolean) => {
+    setUserPreference(enabled);
+    localStorage.setItem('trackNotifyPreference', JSON.stringify(enabled));
+    
+    // If user disables preference, stop tracking immediately
+    if (!enabled && isTracking) {
+      stopTracking();
+    }
+  }, [isTracking, stopTracking]);
+
+  // Auto-enable tracking if both permissions are granted AND user preference is true
+  useEffect(() => {
+    if (permissionStatus === 'granted' && geolocationPermissionStatus === 'granted' && userPreference && !isTracking) {
+      startTracking();
+    }
+  }, [permissionStatus, geolocationPermissionStatus, userPreference, isTracking, startTracking]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -200,12 +273,15 @@ export const useLocationNotifications = (
     currentLocation,
     nearbyStores,
     permissionStatus,
+    geolocationPermissionStatus,
     error,
+    userPreference,
     
     // Actions
     startTracking,
     stopTracking,
     requestPermissions,
     checkNearbyStores,
+    setUserPreference: handleSetUserPreference,
   };
 };

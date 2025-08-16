@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiInfo } from 'react-icons/fi';
 import { useLocationNotifications } from '../../hooks/useLocationNotifications';
 import { useNavigate } from 'react-router-dom';
@@ -16,41 +16,53 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
   const {
     isTracking,
     permissionStatus,
+    geolocationPermissionStatus,
+    userPreference,
     startTracking,
     stopTracking,
     requestPermissions,
+    setUserPreference,
   } = useLocationNotifications((listId: string) => {
     // Navigate to the specific list when notification is clicked
     navigate(`/list/${listId}`);
   });
 
+  // Force re-render when permission states change
+  useEffect(() => {
+    // This effect ensures the component re-renders when permission states are updated
+  }, [permissionStatus, geolocationPermissionStatus]);
+
   const handleToggleTracking = async () => {
-    if (isTracking) {
-      stopTracking();
-    } else {
-      try {
-        // Request permissions first if not granted
-        if (permissionStatus !== 'granted' || Notification.permission !== 'granted') {
-          await requestPermissions();
-          // Wait a moment for permission state to update
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // Check permissions again after requesting
-        const currentNotificationPermission = Notification.permission;
-        
-        // Start tracking if permissions are granted
-        if (permissionStatus === 'granted' && currentNotificationPermission === 'granted') {
-          await startTracking();
-        } else {
-          console.warn('Permissions not granted:', { 
-            permissionStatus, 
-            notificationPermission: currentNotificationPermission 
-          });
-        }
-      } catch (error) {
-        console.error('Error toggling tracking:', error);
+    if (userPreference) {
+      setUserPreference(false);
+      if (isTracking) {
+        stopTracking();
       }
+      return;
+    }
+
+    try {
+      // Always request permissions to ensure we have the latest state
+      const permissions = await requestPermissions();
+      
+      if (permissions.notification === 'granted' && permissions.geolocation === 'granted') {
+        setUserPreference(true);
+        // Start tracking immediately after permissions are granted
+        await startTracking();
+      } else {
+        // Show specific error messages based on which permission was denied
+        if (permissions.notification === 'denied') {
+          console.warn('Notification permission denied. Please enable notifications in browser settings.');
+        }
+        if (permissions.geolocation === 'denied') {
+          console.warn('Location permission denied. Please enable location access in browser settings.');
+        }
+        // Reset user preference if permissions are not granted
+        setUserPreference(false);
+      }
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      setUserPreference(false);
     }
   };
 
@@ -82,9 +94,9 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
           <button 
             className="toggle-button"
             onClick={handleToggleTracking}
-            aria-label={isTracking ? 'Disable location tracking' : 'Enable location tracking'}
+            aria-label={userPreference && permissionStatus === 'granted' && geolocationPermissionStatus === 'granted' ? 'Disable location tracking' : 'Enable location tracking'}
           >
-            <div className={`toggle-slider ${isTracking ? 'active' : ''}`}>
+            <div className={`toggle-slider ${userPreference && permissionStatus === 'granted' && geolocationPermissionStatus === 'granted' ? 'active' : ''}`}>
               <div className="toggle-knob"></div>
             </div>
           </button>
@@ -109,6 +121,7 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
                 <li>Only shows when you have incomplete items</li>
                 <li>Limited to once per 30 minutes per store</li>
                 <li>Location data is only used locally and not stored on servers</li>
+                <li>Please ensure granting both notification & location permissions</li>
               </ul>
             </div>
           </div>
@@ -116,6 +129,20 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
       )}
 
       <style>{`
+        .toggle-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
         .info-button {
           background: none;
           border: none;
