@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ShoppingList } from '../types/shopping';
+import type { ShoppingList } from '../types';
 
 /**
  * Filter out deleted lists and items from shopping lists data

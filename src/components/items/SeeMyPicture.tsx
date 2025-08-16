@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { createWorker } from 'tesseract.js';
 import { FiX, FiUpload, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import GeminiService from '../../services/geminiService';

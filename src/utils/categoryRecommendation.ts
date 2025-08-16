@@ -1,4 +1,4 @@
-import categoriesData from '../config/categories.json';
+import { categoryMappings, type CategoryPattern } from '../config/categoryMappings';
 import { categories } from '../config/categories';
 
 interface CategoryMatch {
@@ -8,9 +8,11 @@ interface CategoryMatch {
   confidence: number;
 }
 
-// Import configuration data from categories.json
-const ITEM_CATEGORY_MAPPING: Record<string, string> = categoriesData.itemCategoryMapping;
-const CATEGORY_KEYWORDS: Record<string, string[]> = categoriesData.categoryKeywords;
+interface RecommendationResult {
+  category: string;
+  confidence: number;
+  method: 'direct' | 'context' | 'pattern' | 'keyword' | 'similarity';
+}
 
 /**
  * Calculate Levenshtein distance between two strings
@@ -75,53 +77,38 @@ function getBigrams(str: string): string[] {
 }
 
 /**
- * Check if item matches semantic keywords for a category
+ * Check for direct mapping match
  */
-function getSemanticMatch(itemName: string): string | null {
+function getDirectMatch(itemName: string): RecommendationResult | null {
   const normalizedItem = itemName.toLowerCase().trim();
   
-  // Special handling for baby items - check baby-specific patterns first
-  if (/\b(baby|infant|newborn|toddler|child)\s+/.test(normalizedItem)) {
-    // Check if it's a baby-specific item
-    if (/\b(baby|infant|newborn|toddler|child)\s+(chair|shoe|shoes|hat|jacket|clothes|shirt|dress|pants|shorts|socks|mittens|gloves|bib|bottle|formula|food|cereal|toy|blanket)\b/.test(normalizedItem)) {
-      return 'baby';
-    }
+  if (categoryMappings.directMappings[normalizedItem]) {
+    return {
+      category: categoryMappings.directMappings[normalizedItem],
+      confidence: 1.0,
+      method: 'direct'
+    };
   }
   
-  // Special handling for health items - check health-specific patterns before general mappings
-  if (/\b(pill|pills|medicine|medication|tablet|tablets|capsule|capsules|drug|drugs|vitamin|vitamins|supplement|supplements|painkiller|pain\s*relief|aspirin|panadol|ibuprofen|paracetamol|acetaminophen|antibiotic|antibiotics|antacid|antacids|laxative|laxatives|cough\s*syrup|cold\s*medicine|flu\s*medicine|thermometer|bandage|bandages|plaster|plasters|antiseptic|ointment|nasal\s*spray|inhaler|multivitamin|fish\s*oil|omega\s*3|calcium|iron\s*supplement|zinc|magnesium|probiotics|protein\s*powder|sleeping\s*pill|sleep\s*aid|melatonin|allergy\s*medicine|antihistamine|decongestant|expectorant|medical|pharmaceutical|therapeutic|prescription|otc|over\s*the\s*counter|first\s*aid)\b/.test(normalizedItem)) {
-    return 'health';
-  }
+  return null;
+}
+
+/**
+ * Check for context-sensitive matches
+ */
+function getContextMatch(itemName: string): RecommendationResult | null {
+  const normalizedItem = itemName.toLowerCase().trim();
   
-  // First check direct mapping
-  if (ITEM_CATEGORY_MAPPING[normalizedItem]) {
-    return ITEM_CATEGORY_MAPPING[normalizedItem];
-  }
+  // Sort context rules by priority (highest first)
+  const sortedRules = [...categoryMappings.contextRules].sort((a, b) => b.priority - a.priority);
   
-  // Check for partial matches in the mapping, but be careful with health items
-  for (const [key, categoryId] of Object.entries(ITEM_CATEGORY_MAPPING)) {
-    // Skip partial matches that might conflict with health items
-    if (categoryId === 'household' && (normalizedItem.includes('tablet') || normalizedItem.includes('capsule'))) {
-      continue;
-    }
-    if (categoryId === 'lifestyle' && normalizedItem.includes('capsule')) {
-      continue;
-    }
-    if (categoryId === 'drinks' && normalizedItem.includes('medicine')) {
-      continue;
-    }
-    
-    if (normalizedItem.includes(key) || key.includes(normalizedItem)) {
-      return categoryId;
-    }
-  }
-  
-  // Check semantic keywords
-  for (const [categoryId, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    for (const keyword of keywords) {
-      if (normalizedItem.includes(keyword) || keyword.includes(normalizedItem)) {
-        return categoryId;
-      }
+  for (const rule of sortedRules) {
+    if (rule.pattern.test(normalizedItem) && rule.condition.test(normalizedItem)) {
+      return {
+        category: rule.category,
+        confidence: 0.95,
+        method: 'context'
+      };
     }
   }
   
@@ -129,40 +116,187 @@ function getSemanticMatch(itemName: string): string | null {
 }
 
 /**
- * Enhanced recommendation using semantic knowledge + string similarity
+ * Check for pattern-based matches
  */
-function getEnhancedRecommendation(itemName: string): string {
-  const normalizedItemName = itemName.toLowerCase().trim();
+function getPatternMatch(itemName: string): RecommendationResult | null {
+  const normalizedItem = itemName.toLowerCase().trim();
   
-  // First try semantic matching
-  const semanticMatch = getSemanticMatch(normalizedItemName);
-  if (semanticMatch) {
-    return semanticMatch;
+  // Sort patterns by priority (highest first)
+  const sortedPatterns = [...categoryMappings.patternMappings].sort((a, b) => b.priority - a.priority);
+  
+  for (const pattern of sortedPatterns) {
+    if (pattern.pattern.test(normalizedItem)) {
+      const confidence = Math.min(0.9, 0.5 + (pattern.priority / 100));
+      return {
+        category: pattern.category,
+        confidence,
+        method: 'pattern'
+      };
+    }
   }
   
-  // Fall back to string similarity with improved scoring
+  return null;
+}
+
+/**
+ * Check for keyword-based matches
+ */
+function getKeywordMatch(itemName: string): RecommendationResult | null {
+  const normalizedItem = itemName.toLowerCase().trim();
+  const itemWords = normalizedItem.split(/\s+/);
+  
+  let bestMatch: RecommendationResult | null = null;
+  let bestScore = 0;
+  
+  for (const [category, keywords] of Object.entries(categoryMappings.keywordMappings)) {
+    let matchScore = 0;
+    let matchCount = 0;
+    
+    for (const keyword of keywords) {
+      const keywordLower = keyword.toLowerCase();
+      
+      // Exact substring match
+      if (normalizedItem.includes(keywordLower) || keywordLower.includes(normalizedItem)) {
+        matchScore += 1.0;
+        matchCount++;
+        continue;
+      }
+      
+      // Word-level matching
+      for (const word of itemWords) {
+        if (word.includes(keywordLower) || keywordLower.includes(word)) {
+          matchScore += 0.8;
+          matchCount++;
+        } else if (levenshteinDistance(word, keywordLower) <= 1 && word.length > 2) {
+          matchScore += 0.6;
+          matchCount++;
+        }
+      }
+    }
+    
+    if (matchCount > 0) {
+      const confidence = Math.min(0.8, (matchScore / keywords.length) * 0.8);
+      if (confidence > bestScore) {
+        bestScore = confidence;
+        bestMatch = {
+          category,
+          confidence,
+          method: 'keyword'
+        };
+      }
+    }
+  }
+  
+  return bestMatch && bestScore > 0.3 ? bestMatch : null;
+}
+
+/**
+ * Enhanced recommendation using consolidated configuration
+ */
+function getEnhancedRecommendation(itemName: string): RecommendationResult {
+  if (!itemName || itemName.trim().length === 0) {
+    return { category: 'general', confidence: 0, method: 'direct' };
+  }
+  
+  // Try methods in order of priority
+  const methods = [
+    () => getDirectMatch(itemName),
+    () => getContextMatch(itemName),
+    () => getPatternMatch(itemName),
+    () => getKeywordMatch(itemName)
+  ];
+  
+  for (const method of methods) {
+    const result = method();
+    if (result && result.confidence > 0.5) {
+      return result;
+    }
+  }
+  
+  // If no good match found, try similarity matching with category subcategories
+  const similarityResult = getSimilarityMatch(itemName);
+  if (similarityResult && similarityResult.confidence > 0.3) {
+    return similarityResult;
+  }
+  
+  return { category: 'general', confidence: 0.1, method: 'similarity' };
+}
+
+/**
+ * Similarity-based matching with category names and keywords
+ */
+function getSimilarityMatch(itemName: string): RecommendationResult | null {
+  const normalizedItemName = itemName.toLowerCase().trim();
   const matches: CategoryMatch[] = [];
 
-  Object.entries(categoriesData.categories).forEach(([categoryName, subcategories]) => {
-    const categoryConfig = categories.find(cat => cat.name === categoryName);
-    if (!categoryConfig) return;
+  // Check similarity with category names
+  categories.forEach(categoryConfig => {
+    const normalizedCategoryName = categoryConfig.name.toLowerCase();
+    
+    // Calculate similarity scores
+    const diceCoeff = diceCoefficient(normalizedItemName, normalizedCategoryName);
+    
+    // Check for exact substring matches
+    const exactMatch = normalizedCategoryName.includes(normalizedItemName) || 
+                      normalizedItemName.includes(normalizedCategoryName);
+    
+    // Word-level matching
+    const itemWords = normalizedItemName.split(/\s+/);
+    const categoryWords = normalizedCategoryName.split(/\s+/);
+    const wordMatches = itemWords.filter(word => 
+      categoryWords.some(catWord => 
+        catWord.includes(word) || word.includes(catWord) || 
+        levenshteinDistance(word, catWord) <= 1
+      )
+    ).length;
+    
+    // Enhanced confidence calculation
+    let confidence = 0;
+    
+    if (exactMatch) {
+      confidence += 0.4;
+    }
+    
+    confidence += (wordMatches / Math.max(itemWords.length, categoryWords.length)) * 0.3;
+    confidence += diceCoeff * 0.2;
+    
+    // Bonus for shorter, more specific matches
+    if (normalizedCategoryName.length <= normalizedItemName.length + 5) {
+      confidence += 0.1;
+    }
+    
+    if (confidence > 0.15) {
+      matches.push({
+        categoryId: categoryConfig.id,
+        categoryName: categoryConfig.name,
+        subcategory: 'category name match',
+        confidence
+      });
+    }
+  });
 
-    subcategories.forEach((subcategory: string) => {
-      const normalizedSubcategory = subcategory.toLowerCase();
+  // Also check similarity with keywords from keywordMappings
+  Object.entries(categoryMappings.keywordMappings).forEach(([categoryId, keywords]) => {
+    const categoryConfig = categories.find(cat => cat.id === categoryId);
+    if (!categoryConfig) return;
+    
+    keywords.forEach(keyword => {
+      const normalizedKeyword = keyword.toLowerCase();
       
       // Calculate similarity scores
-      const diceCoeff = diceCoefficient(normalizedItemName, normalizedSubcategory);
+      const diceCoeff = diceCoefficient(normalizedItemName, normalizedKeyword);
       
       // Check for exact substring matches
-      const exactMatch = normalizedSubcategory.includes(normalizedItemName) || normalizedItemName.includes(normalizedSubcategory);
+      const exactMatch = normalizedKeyword.includes(normalizedItemName) || 
+                        normalizedItemName.includes(normalizedKeyword);
       
       // Word-level matching
       const itemWords = normalizedItemName.split(/\s+/);
-      const subcategoryWords = normalizedSubcategory.split(/\s+/);
+      const keywordWords = normalizedKeyword.split(/\s+/);
       const wordMatches = itemWords.filter(word => 
-        subcategoryWords.some(subWord => 
-          subWord.includes(word) || word.includes(subWord) || 
-          levenshteinDistance(word, subWord) <= 1
+        keywordWords.some(kwWord => 
+          kwWord.includes(word) || word.includes(kwWord) || 
+          levenshteinDistance(word, kwWord) <= 1
         )
       ).length;
       
@@ -170,22 +304,17 @@ function getEnhancedRecommendation(itemName: string): string {
       let confidence = 0;
       
       if (exactMatch) {
-        confidence += 0.5;
+        confidence += 0.3;
       }
       
-      confidence += (wordMatches / Math.max(itemWords.length, subcategoryWords.length)) * 0.3;
-      confidence += diceCoeff * 0.2;
+      confidence += (wordMatches / Math.max(itemWords.length, keywordWords.length)) * 0.25;
+      confidence += diceCoeff * 0.15;
       
-      // Bonus for shorter, more specific matches
-      if (normalizedSubcategory.length <= normalizedItemName.length + 3) {
-        confidence += 0.1;
-      }
-      
-      if (confidence > 0.15) {
+      if (confidence > 0.2) {
         matches.push({
           categoryId: categoryConfig.id,
-          categoryName,
-          subcategory,
+          categoryName: categoryConfig.name,
+          subcategory: `keyword: ${keyword}`,
           confidence
         });
       }
@@ -195,128 +324,22 @@ function getEnhancedRecommendation(itemName: string): string {
   matches.sort((a, b) => b.confidence - a.confidence);
   
   if (matches.length > 0 && matches[0].confidence > 0.25) {
-    return matches[0].categoryId;
+    return {
+      category: matches[0].categoryId,
+      confidence: matches[0].confidence,
+      method: 'similarity'
+    };
   }
   
-  return 'general';
-}
-
-/**
- * Simple LLM-style categorization using pattern matching
- * This is a lightweight alternative to calling an external LLM
- */
-function getLLMStyleRecommendation(itemName: string): string {
-  const lowerItem = itemName.toLowerCase();
-  
-  // Context-sensitive categorization - check for baby items first
-  if (/\b(baby|infant|newborn|toddler|child)\s+/.test(lowerItem)) {
-    // Baby-specific items override general categories
-    if (/\b(baby|infant|newborn|toddler|child)\s+(shoe|hat|jacket|clothes|shirt|dress|pants|shorts|socks|mittens|gloves|bib|bottle|formula|food|cereal|toy|blanket|chair)\b/.test(lowerItem)) {
-      return 'baby';
-    }
-  }
-  
-  // Handle adult-specific items that should go to lifestyle
-  if (/\b(adult|men|women|man|woman|mens|womens)\s+(shoe|shoes|clothing|clothes|apparel)\b/.test(lowerItem)) {
-    return 'lifestyle';
-  }
-  
-  // Pattern-based categorization using semantic understanding
-  const patterns = [
-    // Baby items (check first to override general categories)
-    { pattern: /\b(baby|infant|child|kid|toddler|newborn|formula|diaper|nappy|wipes|powder|bottle|pacifier|dummy|teether)\b/, category: 'baby' },
-    { pattern: /\b(toy|rattle|stroller|pram|car\s*seat|high\s*chair|baby\s*chair|gate|monitor|crib|cot|mattress|blanket|swaddle|bib|carrier|sling)\b/, category: 'baby' },
-    
-    // Health & Wellness items (high priority)
-    { pattern: /\b(pill|pills|medicine|medication|tablet|tablets|capsule|capsules|drug|drugs)\b/, category: 'health' },
-    { pattern: /\b(vitamin|vitamins|supplement|supplements|painkiller|pain\s*relief|aspirin|panadol|ibuprofen|paracetamol|acetaminophen)\b/, category: 'health' },
-    { pattern: /\b(antibiotic|antibiotics|antacid|antacids|laxative|laxatives|cough\s*syrup|cold\s*medicine|flu\s*medicine)\b/, category: 'health' },
-    { pattern: /\b(thermometer|bandage|bandages|plaster|plasters|antiseptic|ointment|nasal\s*spray|inhaler)\b/, category: 'health' },
-    { pattern: /\b(multivitamin|fish\s*oil|omega\s*3|calcium|iron\s*supplement|zinc|magnesium|probiotics|protein\s*powder)\b/, category: 'health' },
-    { pattern: /\b(sleeping\s*pill|sleep\s*aid|melatonin|allergy\s*medicine|antihistamine|decongestant|expectorant)\b/, category: 'health' },
-    { pattern: /\b(medical|pharmaceutical|therapeutic|prescription|otc|over\s*the\s*counter|first\s*aid)\b/, category: 'health' },
-    
-    // Singapore-specific beverages
-    { pattern: /\b(kopi|teh|milo|horlicks|ovaltine|bandung|yuan\s*yang|michael\s*jackson|neslo|clementi)\b/, category: 'drinks' },
-    { pattern: /\b(teh\s*tarik|kopi\s*tarik|milo\s*dinosaur|milo\s*godzilla|teh\s*cino|milo\s*cino)\b/, category: 'drinks' },
-    
-    // Singapore-specific food items
-    { pattern: /\b(durian|rambutan|longan|lychee|dragonfruit|starfruit|guava|jackfruit|calamansi)\b/, category: 'produce' },
-    { pattern: /\b(kangkung|kailan|chye\s*sim|bok\s*choy|taugeh|lady\s*finger|bitter\s*gourd|winter\s*melon|daikon)\b/, category: 'produce' },
-    { pattern: /\b(char\s*siu|fishball|fish\s*ball|fishcake|fish\s*cake|sotong|cockles|pomfret|threadfin|grouper)\b/, category: 'meat' },
-    { pattern: /\b(bee\s*hoon|mee\s*sua|kway\s*teow|maggi|sambal|belacan|gula\s*melaka|santan|assam)\b/, category: 'pantry' },
-    
-    // Lifestyle items (clothing, accessories, etc.)
-    { pattern: /\b(hat|cap|jacket|coat|shirt|blouse|dress|skirt|pants|jeans|shorts|shoes|sneakers|sandals|slippers|boots|heels)\b/, category: 'lifestyle' },
-    { pattern: /\b(underwear|bra|socks|stockings|belt|tie|scarf|gloves|sunglasses|watch|jewelry|necklace|earrings|bracelet|ring)\b/, category: 'lifestyle' },
-    { pattern: /\b(bag|handbag|backpack|wallet|purse|umbrella)\b/, category: 'lifestyle' },
-    { pattern: /\b(clothing|fashion|wear|apparel|style|outfit|garment|trendy|casual|formal|sporty|elegant)\b/, category: 'lifestyle' },
-    
-    // Fruits and vegetables
-    { pattern: /\b(fruit|berry|citrus|tropical|fresh)\b/, category: 'produce' },
-    { pattern: /\b(vegetable|veggie|green|leafy|root|chili|chilli|ginger|garlic|shallot|lemongrass|pandan)\b/, category: 'produce' },
-    
-    // Dairy and eggs
-    { pattern: /\b(milk|dairy|cheese|yogurt|cream|butter|condensed\s*milk|evaporated\s*milk)\b/, category: 'dairy' },
-    { pattern: /\b(egg|eggs)\b/, category: 'dairy' },
-    
-    // Meat and seafood
-    { pattern: /\b(meat|protein|chicken|beef|pork|duck|mutton|lamb|fish|seafood|prawns|shrimp|crab|lobster)\b/, category: 'meat' },
-    { pattern: /\b(sausage|bacon|ham|squid|clams|mussels|oysters|salmon|mackerel)\b/, category: 'meat' },
-    
-    // Beverages (general)
-    { pattern: /\b(drink|beverage|juice|water|soda|coffee|tea|coconut\s*water|sugarcane\s*juice|barley\s*water)\b/, category: 'drinks' },
-    { pattern: /\b(green\s*tea|oolong\s*tea|jasmine\s*tea|lemon\s*tea|ice\s*lemon\s*tea|chinese\s*tea|chrysanthemum\s*tea)\b/, category: 'drinks' },
-    { pattern: /\b(beer|wine|alcohol|spirit|liquor|whiskey|vodka|gin|rum|brandy|champagne|sake|soju|cocktail)\b/, category: 'alcohol' },
-    
-    // Personal care and beauty
-    { pattern: /\b(shampoo|conditioner|soap|lotion|cream|beauty|care|cosmetic|moisturizer|cleanser|toner|serum)\b/, category: 'beauty' },
-    { pattern: /\b(makeup|lipstick|foundation|concealer|mascara|eyeliner|eyeshadow|blush|nail\s*polish|perfume|cologne)\b/, category: 'beauty' },
-    { pattern: /\b(deodorant|antiperspirant|sunscreen|face\s*wash|body\s*wash|hair\s*mask|face\s*mask)\b/, category: 'beauty' },
-    
-    // Household items
-    { pattern: /\b(clean|household|detergent|bleach|disinfectant|sanitizer|cleaner|dishwashing|fabric\s*softener)\b/, category: 'household' },
-    { pattern: /\b(paper|tissue|towel|napkin|toilet\s*paper|paper\s*towel|air\s*freshener|insecticide|mosquito)\b/, category: 'household' },
-    { pattern: /\b(trash|garbage|foil|wrap|candle|battery|bulb|gloves|sponge|brush|mop|broom|vacuum)\b/, category: 'household' },
-    { pattern: /\b(chair|table|desk|shelf|cabinet|drawer|furniture|sofa|couch|bed|mattress|pillow|cushion|lamp|mirror)\b/, category: 'household' },
-    
-    // Pantry and dry goods
-    { pattern: /\b(dry|canned|packaged|sauce|spice|grain|instant)\b/, category: 'pantry' },
-    { pattern: /\b(flour|rice|noodles|pasta|vermicelli|spaghetti|macaroni)\b/, category: 'rice' },
-    { pattern: /\b(sugar|salt|oil|vinegar|soy\s*sauce|oyster\s*sauce|sesame\s*oil|fish\s*sauce|hoisin\s*sauce|chili\s*sauce)\b/, category: 'pantry' },
-    { pattern: /\b(curry\s*powder|turmeric|coriander|cumin|coconut\s*milk|tamarind|palm\s*sugar|cornstarch|baking)\b/, category: 'pantry' },
-    
-    // Bakery items
-    { pattern: /\b(bread|baked|pastry|cake|cookie|muffin|toast|bun|croissant|bagel|loaf|roll|dough)\b/, category: 'bakery' },
-    { pattern: /\b(cereal|cereals|cornflakes|oats|oatmeal|muesli|granola|breakfast)\b/, category: 'bakery' },
-  ];
-  
-  for (const { pattern, category } of patterns) {
-    if (pattern.test(lowerItem)) {
-      return category;
-    }
-  }
-  
-  return 'general';
+  return null;
 }
 
 /**
  * Main recommendation function with hybrid approach
  */
 export function recommendCategory(itemName: string): string {
-  if (!itemName || itemName.trim().length === 0) {
-    return 'general';
-  }
-
-  // Try enhanced recommendation first
-  const enhancedResult = getEnhancedRecommendation(itemName);
-  if (enhancedResult !== 'general') {
-    return enhancedResult;
-  }
-  
-  // Fall back to LLM-style pattern matching
-  const llmResult = getLLMStyleRecommendation(itemName);
-  return llmResult;
+  const result = getEnhancedRecommendation(itemName);
+  return result.category;
 }
 
 /**
@@ -327,67 +350,26 @@ export function getRecommendationDetails(itemName: string): CategoryMatch[] {
     return [];
   }
 
-  const normalizedItemName = itemName.toLowerCase().trim();
-  const matches: CategoryMatch[] = [];
-
-  // Add semantic match if found
-  const semanticMatch = getSemanticMatch(normalizedItemName);
-  if (semanticMatch) {
-    const categoryConfig = categories.find(cat => cat.id === semanticMatch);
-    if (categoryConfig) {
-      matches.push({
-        categoryId: semanticMatch,
-        categoryName: categoryConfig.name,
-        subcategory: 'Semantic Match',
-        confidence: 0.9
-      });
-    }
+  const result = getEnhancedRecommendation(itemName);
+  const categoryConfig = categories.find(cat => cat.id === result.category);
+  
+  if (!categoryConfig) {
+    return [];
   }
 
-  // Add string similarity matches
-  Object.entries(categoriesData.categories).forEach(([categoryName, subcategories]) => {
-    const categoryConfig = categories.find(cat => cat.name === categoryName);
-    if (!categoryConfig) return;
+  const match: CategoryMatch = {
+    categoryId: result.category,
+    categoryName: categoryConfig.name,
+    subcategory: `${result.method} match`,
+    confidence: result.confidence
+  };
 
-    subcategories.forEach((subcategory: string) => {
-      const normalizedSubcategory = subcategory.toLowerCase();
-      
-      const diceCoeff = diceCoefficient(normalizedItemName, normalizedSubcategory);
-      
-      const exactMatch = normalizedSubcategory.includes(normalizedItemName) || normalizedItemName.includes(normalizedSubcategory);
-      
-      const itemWords = normalizedItemName.split(/\s+/);
-      const subcategoryWords = normalizedSubcategory.split(/\s+/);
-      const wordMatches = itemWords.filter(word => 
-        subcategoryWords.some(subWord => 
-          subWord.includes(word) || word.includes(subWord) || 
-          levenshteinDistance(word, subWord) <= 1
-        )
-      ).length;
-      
-      let confidence = 0;
-      
-      if (exactMatch) {
-        confidence += 0.5;
-      }
-      
-      confidence += (wordMatches / Math.max(itemWords.length, subcategoryWords.length)) * 0.3;
-      confidence += diceCoeff * 0.2;
-      
-      if (normalizedSubcategory.length <= normalizedItemName.length + 3) {
-        confidence += 0.1;
-      }
-      
-      if (confidence > 0.1) {
-        matches.push({
-          categoryId: categoryConfig.id,
-          categoryName,
-          subcategory,
-          confidence
-        });
-      }
-    });
-  });
+  return [match];
+}
 
-  return matches.sort((a, b) => b.confidence - a.confidence);
+/**
+ * Get recommendation with detailed information
+ */
+export function getDetailedRecommendation(itemName: string): RecommendationResult {
+  return getEnhancedRecommendation(itemName);
 }

@@ -3,16 +3,9 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { SECURE_CONFIG } from './secrets';
 
-const firebaseConfig = { 
-  apiKey: "AIzaSyDYUDPIzq-rrdO42q-Z306VO2vCUyJGG10", 
-  authDomain: "buywhatsg-80f32.firebaseapp.com", 
-  projectId: "buywhatsg-80f32", 
-  storageBucket: "buywhatsg-80f32.firebasestorage.app", 
-  messagingSenderId: "559463319723", 
-  appId: "1:559463319723:web:add63e7da748f31a080fee", 
-  measurementId: "G-0B5MJCPNTV" 
-};
+const firebaseConfig = SECURE_CONFIG.FIREBASE;
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

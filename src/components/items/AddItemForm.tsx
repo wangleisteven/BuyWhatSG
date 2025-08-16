@@ -2,9 +2,9 @@ import { useState } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import { compressImage, isImageFile } from '../../utils/imageUtils';
+import { compressImage, isImageFile } from '../../utils';
 import { recommendCategory } from '../../utils/categoryRecommendation';
-import Toast from '../ui/Toast';
+import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
 import './Items.css';
 
@@ -20,7 +20,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const [category, setCategory] = useState('general');
   const [photoURL, setPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [showErrorToast, setShowErrorToast] = useState(false);
+  const { addToast } = useToast();
   const [errorMessage, setErrorMessage] = useState('');
   
   // Handle auto-recommendation when item name loses focus
@@ -66,15 +66,13 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
 
     // Check if it's an image file
     if (!isImageFile(file)) {
-      setErrorMessage('Please select a valid image file.');
-      setShowErrorToast(true);
+      addToast({ message: 'Please select a valid image file.', type: 'error' });
       return;
     }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('File size must be less than 5MB. Please choose a smaller photo.');
-      setShowErrorToast(true);
+      addToast({ message: 'File size must be less than 5MB. Please choose a smaller photo.', type: 'error' });
       return;
     }
 
@@ -100,8 +98,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
       setPhotoURL(finalDataUrl);
     } catch (error) {
       console.error('Error processing photo:', error);
-      setErrorMessage('Failed to process photo. Please try again.');
-      setShowErrorToast(true);
+      addToast({ message: 'Failed to process photo. Please try again.', type: 'error' });
     } finally {
       setIsUploading(false);
     }
@@ -222,14 +219,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
         </form>
       </div>
       
-      {/* Error toast */}
-      {showErrorToast && (
-        <Toast
-          message={errorMessage}
-          type="error"
-          onClose={() => setShowErrorToast(false)}
-        />
-      )}
+
     </div>
   );
 };

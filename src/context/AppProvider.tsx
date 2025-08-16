@@ -3,8 +3,7 @@ import { ThemeProvider } from './ThemeContext';
 import { AuthProvider } from './AuthContext';
 import { ShoppingListProvider } from './ShoppingListContext';
 import { NotificationProvider } from './NotificationContext';
-import { ToastProvider } from './ToastContext';
-import { AlertProvider } from './AlertContext';
+import { NotificationProvider as NotificationSystemProvider } from './NotificationSystemContext';
 import { PWAProvider } from './PWAContext';
 
 type AppProviderProps = {
@@ -15,17 +14,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <ThemeProvider>
       <PWAProvider>
-        <ToastProvider>
+        <NotificationSystemProvider>
           <AuthProvider>
             <NotificationProvider>
-              <AlertProvider>
-                <ShoppingListProvider>
-                  {children}
-                </ShoppingListProvider>
-              </AlertProvider>
+              <ShoppingListProvider>
+                {children}
+              </ShoppingListProvider>
             </NotificationProvider>
           </AuthProvider>
-        </ToastProvider>
+        </NotificationSystemProvider>
       </PWAProvider>
     </ThemeProvider>
   );

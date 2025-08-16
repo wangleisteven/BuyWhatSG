@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import type { ShoppingItem, ShoppingList } from '../types/shopping';
-import { useAlert } from './AlertContext';
+import type { ShoppingItem, ShoppingList } from '../types';
+import { useAlert } from './NotificationSystemContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import {
   getUserLists,

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { auth, googleProvider } from '../config/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { useToast } from './ToastContext';
+import { useToast } from './NotificationSystemContext';
 
 type User = {
   id: string;

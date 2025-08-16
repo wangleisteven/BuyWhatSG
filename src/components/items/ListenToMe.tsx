@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiX, FiMic, FiMicOff, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import WhisperService from '../../services/whisperService';

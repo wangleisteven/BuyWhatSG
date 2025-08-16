@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useOffline } from '../../hooks/useOffline';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/NotificationSystemContext';
 import { FiWifiOff } from 'react-icons/fi';
 import './OfflineIndicator.css';
 

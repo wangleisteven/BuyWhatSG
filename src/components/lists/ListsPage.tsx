@@ -3,8 +3,8 @@ import type { MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiClock, FiTrash2, FiCopy, FiArchive, FiRotateCcw, FiPlus } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import { useAlert } from '../../context/AlertContext';
-import { formatDate } from '../../utils/helpers';
+import { useAlert } from '../../context/NotificationSystemContext';
+import { formatDate } from '../../utils';
 import emptyIcon from '../../assets/empty.svg';
 import './Lists.css';
 

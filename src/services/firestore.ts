@@ -12,7 +12,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { ShoppingList, ShoppingItem } from '../types/shopping';
+import type { ShoppingList, ShoppingItem } from '../types';
 
 // Collection names
 const LISTS_COLLECTION = 'shoppingLists';

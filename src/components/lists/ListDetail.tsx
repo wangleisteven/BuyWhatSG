@@ -6,14 +6,14 @@ import { IoMdPhotos } from "react-icons/io";
 import { RiVoiceAiFill } from "react-icons/ri";
 import { LuMessageSquareMore } from "react-icons/lu";
 import { useShoppingList } from '../../context/ShoppingListContext';
-import type { ShoppingItem } from '../../types/shopping';
+import type { ShoppingItem } from '../../types';
 import ShoppingListItem from '../items/ShoppingListItem';
 import EditItemModal from '../items/EditItemModal';
 import AddItemForm from '../items/AddItemForm';
 import SeeMyPicture from '../items/SeeMyPicture';
 import ListenToMe from '../items/ListenToMe';
 import ReadMyMessage from '../items/ReadMyMessage';
-import Toast from '../ui/Toast';
+import { useToast } from '../../context/NotificationSystemContext';
 import { categories, getCategoryName, getCategoryById } from '../../config/categories';
 import emptyIcon from '../../assets/empty.svg';
 import './ListDetail.css';
@@ -37,7 +37,8 @@ const ListDetail = () => {
   const [showListenToMe, setShowListenToMe] = useState(false);
   const [showReadMyMessage, setShowReadMyMessage] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-  const [showUndoToast, setShowUndoToast] = useState(false);
+  const { addToast } = useToast();
+  const [undoToastId, setUndoToastId] = useState<string | null>(null);
   
   // Find the list by ID and update currentList when lists change
   useEffect(() => {
@@ -57,16 +58,16 @@ const ListDetail = () => {
   // Show undo toast when an item is deleted
   useEffect(() => {
     if (lastDeletedItem && lastDeletedItem.listId === listId) {
-      setShowUndoToast(true);
-      
-      // Auto-hide toast after 5 seconds
-      const timer = setTimeout(() => {
-        setShowUndoToast(false);
-      }, 5000);
-      
-      return () => clearTimeout(timer);
+      const toastId = addToast({
+         message: `Deleted "${lastDeletedItem.item.name}"`,
+         type: 'info',
+         duration: 5000,
+         action: 'Undo',
+         onAction: handleUndoDelete
+       });
+      setUndoToastId(toastId);
     }
-  }, [lastDeletedItem, listId]);
+  }, [lastDeletedItem, listId, addToast]);
   
 
   
@@ -75,7 +76,7 @@ const ListDetail = () => {
   // Handle undo delete
   const handleUndoDelete = () => {
     undoDeleteItem();
-    setShowUndoToast(false);
+    setUndoToastId(null);
   };
 
   // Handle add item menu actions
@@ -295,16 +296,7 @@ const ListDetail = () => {
         />
       )}
       
-      {/* Undo delete toast */}
-      {showUndoToast && lastDeletedItem && (
-        <Toast
-          message={`Deleted "${lastDeletedItem.item.name}"`}
-          action="Undo"
-          onAction={handleUndoDelete}
-          onClose={() => setShowUndoToast(false)}
-          type="info"
-        />
-      )}
+
     </div>
   );
 };

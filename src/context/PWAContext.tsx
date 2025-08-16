@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { isStandalone } from '../utils/helpers';
-import { updateManifestForCurrentDomain } from '../utils/manifestUtils';
-import { handleDeepLink, registerUrlHandler, markPWAAsInstalled, showOpenInAppPrompt } from '../utils/deepLinkHandler';
+import { isStandalone, updateManifestForCurrentDomain } from '../utils';
+import { handleDeepLink, registerUrlHandler, markPWAAsInstalled, showOpenInAppPrompt } from '../utils';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -66,7 +65,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     }
 
     // Initialize deep linking
-    handleDeepLink();
+    handleDeepLink(window.location.href);
     registerUrlHandler();
     
     // Show open in app prompt if PWA is installed but running in browser

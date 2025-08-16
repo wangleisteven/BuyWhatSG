@@ -19,6 +19,9 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# Secure configuration (contains sensitive data)
+src/config/secrets.ts
+
 # SSL certificates
 *.pem
 *.key

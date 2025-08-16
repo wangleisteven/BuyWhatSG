@@ -4,14 +4,14 @@ import Layout from './components/layout/Layout';
 import ListsPage from './components/lists/ListsPage';
 import ListDetail from './components/lists/ListDetail';
 import MePage from './components/me/MePage';
-import ToastContainer from './components/ui/ToastContainer';
-import { useToast } from './context/ToastContext';
+import { NotificationContainer } from './components/ui/NotificationSystem';
+import { useNotificationSystem } from './context/NotificationSystemContext';
 import './App.css';
 
-// Toast container wrapper that uses the toast context
-const ToastWrapper = () => {
-  const { toasts, removeToast } = useToast();
-  return <ToastContainer toasts={toasts} removeToast={removeToast} />;
+// Notification container wrapper that uses the unified notification system
+const NotificationWrapper = () => {
+  const { notifications, removeNotification } = useNotificationSystem();
+  return <NotificationContainer notifications={notifications} removeNotification={removeNotification} />;
 };
 
 function App() {
@@ -27,7 +27,7 @@ function App() {
             <Route path="*" element={<Navigate to="/lists" replace />} />
           </Routes>
         </Layout>
-        <ToastWrapper />
+        <NotificationWrapper />
       </Router>
     </AppProvider>
   )

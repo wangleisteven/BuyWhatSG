@@ -1,4 +1,4 @@
-import type { ShoppingList } from '../types/shopping';
+import type { ShoppingList } from '../types';
 import type { FairPriceStore } from './geolocation';
 
 export interface NotificationOptions {
