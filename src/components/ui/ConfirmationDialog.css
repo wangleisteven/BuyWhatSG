@@ -92,6 +92,8 @@
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text-primary);
+  justify-content: center;
+  text-align: center;
 }
 
 .confirmation-dialog-message {
@@ -105,6 +107,8 @@
   gap: var(--spacing-sm);
   padding: 0 var(--spacing-lg) var(--spacing-lg);
   justify-content: flex-end;
+  justify-content: center;
+  text-align: center;
 }
 
 .confirmation-dialog-button {
