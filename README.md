@@ -91,6 +91,21 @@ npm run build
 yarn build
 ```
 
+The application now includes an environment configuration system that automatically switches between development and production settings. For detailed deployment instructions, please refer to the [Deployment Guide](./DEPLOYMENT.md).
+
+## Environment Configuration
+
+The application uses Vite's environment variables system to manage configuration:
+
+- Development environment: Uses values from `.env` and `.env.local`
+- Production environment: Uses values from `.env.production` when building for production
+
+The environment configuration system is defined in `src/config/envConfig.ts` and provides:
+
+- Environment detection (development/production)
+- Environment-specific configurations
+- Logging utilities that respect the current environment
+
 ## PWA Features
 
 This app is designed as a Progressive Web App, which means it can be installed on your device and used offline. To install:

@@ -8,7 +8,7 @@ export interface NotificationOptions {
   badge?: string;
   tag?: string;
   data?: any;
-  actions?: NotificationAction[];
+  // actions?: NotificationAction[]; // Commented out - not commonly used in basic notifications
 }
 
 /**

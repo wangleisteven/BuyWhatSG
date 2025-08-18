@@ -21,7 +21,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const [photoURL, setPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const { addToast } = useToast();
-  const [errorMessage, setErrorMessage] = useState('');
+  // const [errorMessage, setErrorMessage] = useState(''); // Commented out as not currently used
   
   // Handle auto-recommendation when item name loses focus
   const handleItemNameBlur = () => {

@@ -26,7 +26,14 @@ const Header = () => {
   const handleCreateList = async () => {
     try {
       setIsCreatingList(true);
-      const newList = await createList('New List');
+      // Format current date as DD-MMM-YYYY
+      const today = new Date();
+      const day = today.getDate().toString().padStart(2, '0');
+      const month = today.toLocaleDateString('en-US', { month: 'short' });
+      const year = today.getFullYear();
+      const defaultListName = `${day}-${month}-${year}`;
+      
+      const newList = await createList(defaultListName);
       if (newList) {
         navigate(`/list/${newList.id}`);
       }

@@ -1,15 +1,35 @@
 // API Configuration
 import { SECURE_CONFIG, validateSecrets } from './secrets';
+import { CURRENT_ENV, envLog } from './envConfig';
+
+// Environment-specific API endpoints
+const API_ENDPOINTS = {
+  development: {
+    geminiApi: 'https://generativelanguage.googleapis.com',
+    openaiApi: 'https://api.openai.com',
+  },
+  production: {
+    geminiApi: 'https://generativelanguage.googleapis.com',
+    openaiApi: 'https://api.openai.com',
+  }
+};
 
 export const API_CONFIG = {
-  // API Keys from secure config
+  // API Keys
   GEMINI_API_KEY: SECURE_CONFIG.API_KEYS.GEMINI,
   OPENAI_API_KEY: SECURE_CONFIG.API_KEYS.OPENAI,
   
   // API Models
   GEMINI_MODEL: SECURE_CONFIG.API_MODELS.GEMINI_MODEL,
   WHISPER_MODEL: SECURE_CONFIG.API_MODELS.WHISPER_MODEL,
+   
+  // API Endpoints based on environment
+  ENDPOINTS: API_ENDPOINTS[CURRENT_ENV],
 };
+
+// Log API configuration in development environment
+envLog('API Configuration initialized for', CURRENT_ENV);
+envLog('Using endpoints:', API_CONFIG.ENDPOINTS);
 
 // Re-export validation function
 export const validateApiKeys = validateSecrets;

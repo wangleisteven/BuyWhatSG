@@ -1,4 +1,4 @@
-import { categoryMappings, type CategoryPattern } from '../config/categoryMappings';
+import { categoryMappings } from '../config/categoryMappings';
 import { categories } from '../config/categories';
 
 interface CategoryMatch {

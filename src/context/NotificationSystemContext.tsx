@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { generateId } from '../utils';
-import type { NotificationData, NotificationType } from '../components/ui/NotificationSystem';
+import type { NotificationData } from '../components/ui/NotificationSystem';
 import type { AlertOptions } from '../types';
 
 type NotificationContextType = {
@@ -22,10 +22,19 @@ type NotificationProviderProps = {
 
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [alertResolvers, setAlertResolvers] = useState<Map<string, (value: boolean) => void>>(new Map());
+  const [_alertResolvers, setAlertResolvers] = useState<Map<string, (value: boolean) => void>>(new Map());
 
   // Add a toast notification
   const addToast = useCallback((toast: Omit<NotificationData, 'id' | 'type'>) => {
+    // Check if a toast with the same message already exists
+    const existingToast = notifications.find(n => 
+      n.type === 'toast' && n.message === toast.message
+    );
+    
+    if (existingToast) {
+      return existingToast.id;
+    }
+    
     const id = generateId();
     const newToast: NotificationData = { 
       ...toast, 
@@ -36,7 +45,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     
     setNotifications(prev => [...prev, newToast]);
     return id;
-  }, []);
+  }, [notifications]);
 
   // Add an alert notification
   const addAlert = useCallback((alert: Omit<NotificationData, 'id' | 'type'>) => {
@@ -59,27 +68,49 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   // Show a simple alert
   const showAlert = useCallback((options: AlertOptions) => {
-    return addAlert({
-      variant: options.type || 'info',
-      title: options.title,
-      message: options.message,
-      confirmText: options.confirmText || 'OK',
-      onConfirm: () => true
+    return new Promise<boolean>((resolve) => {
+      const id = generateId();
+      const newAlert: NotificationData = {
+        variant: options.type || 'info',
+        title: options.title,
+        message: options.message,
+        confirmText: options.confirmText || 'OK',
+        onConfirm: () => true,
+        id,
+        type: 'alert'
+      };
+      
+      // Store the resolver
+      setAlertResolvers(prev => new Map(prev).set(id, resolve));
+      
+      // Add the alert
+      setNotifications(prev => [...prev, newAlert]);
     });
-  }, [addAlert]);
+  }, []);
 
   // Show a confirmation dialog
   const showConfirm = useCallback((options: AlertOptions) => {
-    return addAlert({
-      variant: options.type || 'info',
-      title: options.title,
-      message: options.message,
-      confirmText: options.confirmText || 'OK',
-      cancelText: options.cancelText || 'Cancel',
-      onConfirm: () => true,
-      onCancel: () => false
+    return new Promise<boolean>((resolve) => {
+      const id = generateId();
+      const newAlert: NotificationData = {
+        variant: options.type || 'info',
+        title: options.title,
+        message: options.message,
+        confirmText: options.confirmText || 'OK',
+        cancelText: options.cancelText || 'Cancel',
+        onConfirm: () => true,
+        onCancel: () => false,
+        id,
+        type: 'alert'
+      };
+      
+      // Store the resolver
+      setAlertResolvers(prev => new Map(prev).set(id, resolve));
+      
+      // Add the alert
+      setNotifications(prev => [...prev, newAlert]);
     });
-  }, [addAlert]);
+  }, []);
 
   // Remove a notification
   const removeNotification = useCallback((id: string) => {
@@ -88,34 +119,36 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       
       // If it's an alert, resolve the promise
       if (notification?.type === 'alert') {
-        const resolver = alertResolvers.get(id);
-        if (resolver) {
-          // Determine the result based on which action was taken
-          const result = notification.onConfirm ? true : false;
-          resolver(result);
+        setAlertResolvers(currentResolvers => {
+          const resolver = currentResolvers.get(id);
+          if (resolver) {
+            // Determine the result based on which action was taken
+            const result = notification.onConfirm ? true : false;
+            resolver(result);
+          }
           
           // Clean up the resolver
-          setAlertResolvers(prev => {
-            const newMap = new Map(prev);
-            newMap.delete(id);
-            return newMap;
-          });
-        }
+          const newMap = new Map(currentResolvers);
+          newMap.delete(id);
+          return newMap;
+        });
       }
       
       return prev.filter(n => n.id !== id);
     });
-  }, [alertResolvers]);
+  }, []);
 
   // Clear all notifications
   const clearNotifications = useCallback(() => {
     // Resolve all pending alerts with false
-    alertResolvers.forEach(resolver => resolver(false));
-    setAlertResolvers(new Map());
+    setAlertResolvers(currentResolvers => {
+      currentResolvers.forEach(resolver => resolver(false));
+      return new Map();
+    });
     setNotifications([]);
-  }, [alertResolvers]);
+  }, []);
 
-  const value: NotificationContextType = {
+  const value: NotificationContextType = useMemo(() => ({
     notifications,
     addToast,
     addAlert,
@@ -123,7 +156,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     showConfirm,
     removeNotification,
     clearNotifications
-  };
+  }), [notifications, addToast, addAlert, showAlert, showConfirm, removeNotification, clearNotifications]);
 
   return (
     <NotificationContext.Provider value={value}>

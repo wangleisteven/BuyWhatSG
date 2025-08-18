@@ -13,7 +13,6 @@ import AddItemForm from '../items/AddItemForm';
 import SeeMyPicture from '../items/SeeMyPicture';
 import ListenToMe from '../items/ListenToMe';
 import ReadMyMessage from '../items/ReadMyMessage';
-import { useToast } from '../../context/NotificationSystemContext';
 import { categories, getCategoryName, getCategoryById } from '../../config/categories';
 import emptyIcon from '../../assets/empty.svg';
 import './ListDetail.css';
@@ -26,9 +25,7 @@ const ListDetail = () => {
   const { 
     lists, 
     currentList, 
-    setCurrentList,
-    lastDeletedItem,
-    undoDeleteItem
+    setCurrentList
   } = useShoppingList();
   
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -37,8 +34,6 @@ const ListDetail = () => {
   const [showListenToMe, setShowListenToMe] = useState(false);
   const [showReadMyMessage, setShowReadMyMessage] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-  const { addToast } = useToast();
-  const [undoToastId, setUndoToastId] = useState<string | null>(null);
   
   // Find the list by ID and update currentList when lists change
   useEffect(() => {
@@ -55,30 +50,10 @@ const ListDetail = () => {
     }
   }, [listId, lists, navigate, setCurrentList]);
   
-  // Show undo toast when an item is deleted
-  useEffect(() => {
-    if (lastDeletedItem && lastDeletedItem.listId === listId) {
-      const toastId = addToast({
-         message: `Deleted "${lastDeletedItem.item.name}"`,
-         type: 'info',
-         duration: 5000,
-         action: 'Undo',
-         onAction: handleUndoDelete
-       });
-      setUndoToastId(toastId);
-    }
-  }, [lastDeletedItem, listId, addToast]);
   
-
   
   // Handle list title update functionality removed as it's not being used
   
-  // Handle undo delete
-  const handleUndoDelete = () => {
-    undoDeleteItem();
-    setUndoToastId(null);
-  };
-
   // Handle add item menu actions
   const handleAddButtonClick = () => {
     setShowAddMenu(!showAddMenu);

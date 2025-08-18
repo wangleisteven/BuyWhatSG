@@ -6,14 +6,17 @@ import { useShoppingList } from '../../context/ShoppingListContext';
 import { useAlert } from '../../context/NotificationSystemContext';
 import { formatDate } from '../../utils';
 import emptyIcon from '../../assets/empty.svg';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
 import './Lists.css';
 
 const ListsPage = () => {
   const { lists, deleteList, duplicateList, archiveList, unarchiveList, setCurrentList, createList } = useShoppingList();
-  const { showConfirm, showAlert } = useAlert();
+  const { showAlert } = useAlert();
   const navigate = useNavigate();
   const [showArchived, setShowArchived] = useState(false);
   const [isCreatingList, setIsCreatingList] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [listToDelete, setListToDelete] = useState<string | null>(null);
 
   // Filter and sort lists based on archive status, excluding deleted lists
   const filteredLists = lists.filter(list => 
@@ -31,21 +34,25 @@ const ListsPage = () => {
   };
 
   // Handle list deletion
-  const handleDeleteList = async (e: MouseEvent, listId: string) => {
+  const handleDeleteList = (e: MouseEvent, listId: string) => {
     e.stopPropagation(); // Prevent triggering the list click
-    
-    // Confirm before deleting
-    const confirmed = await showConfirm({
-      type: 'warning',
-      title: 'Delete List',
-      message: 'Are you sure you want to delete this list? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel'
-    });
-    
-    if (confirmed) {
-      await deleteList(listId);
+    setListToDelete(listId);
+    setShowDeleteConfirm(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (listToDelete) {
+      await deleteList(listToDelete);
+      setShowDeleteConfirm(false);
+      setListToDelete(null);
     }
+  };
+
+  // Handle delete confirmation cancel
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setListToDelete(null);
   };
 
   // Handle list archiving
@@ -80,7 +87,14 @@ const ListsPage = () => {
   const handleCreateList = async () => {
     try {
       setIsCreatingList(true);
-      const newList = await createList('New List');
+      // Format current date as DD-MMM-YYYY
+      const today = new Date();
+      const day = today.getDate().toString().padStart(2, '0');
+      const month = today.toLocaleDateString('en-US', { month: 'short' });
+      const year = today.getFullYear();
+      const defaultListName = `${day}-${month}-${year}`;
+      
+      const newList = await createList(defaultListName);
       if (newList) {
         navigate(`/list/${newList.id}`);
       }
@@ -222,6 +236,17 @@ const ListsPage = () => {
       >
         <FiPlus size={24} />
       </button>
+      
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Delete List"
+        message={`Are you sure you want to delete "${listToDelete ? lists.find(list => list.id === listToDelete)?.name || 'this list' : 'this list'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 };

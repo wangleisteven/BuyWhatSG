@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { FiTrash2 } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
-import type { ShoppingItem } from '../../types/shopping';
+import type { ShoppingItem } from '../../types';
 import { useSwipe } from '../../hooks/useSwipe';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
 import './Items.css';
 
 type ShoppingListItemProps = {
@@ -18,6 +20,7 @@ const ShoppingListItem = ({
   isArchived = false
 }: ShoppingListItemProps) => {
   const { toggleItemCompletion, deleteItem } = useShoppingList();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Handle swipe to delete (disabled for archived lists)
   const { 
@@ -29,7 +32,7 @@ const ShoppingListItem = ({
     resetSwipe 
   } = useSwipe(
     75, // threshold
-    isArchived ? undefined : () => handleDelete(), // onSwipeLeft disabled for archived
+    isArchived ? undefined : () => setShowDeleteConfirm(true), // onSwipeLeft disabled for archived
     undefined // onSwipeRight
   );
   
@@ -45,15 +48,22 @@ const ShoppingListItem = ({
     }
   };
   
-  // Handle item deletion
-  const handleDelete = async () => {
+  // Handle item deletion confirmation
+  const handleDeleteConfirm = async () => {
     try {
       await deleteItem(listId, item.id);
+      setShowDeleteConfirm(false);
       resetSwipe();
     } catch (error) {
       console.error('Error deleting item:', error);
       // Error is already handled in the context with showAlert
     }
+  };
+
+  // Handle delete confirmation cancel
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    resetSwipe();
   };
   
   // Calculate transform style based on swipe
@@ -78,53 +88,66 @@ const ShoppingListItem = ({
   };
 
   return (
-    <div 
-      className={`shopping-list-item ${item.completed ? 'completed' : ''} ${isArchived ? 'archived' : ''}`}
-      onTouchStart={isArchived ? undefined : onTouchStart}
-      onTouchMove={isArchived ? undefined : onTouchMove}
-      onTouchEnd={isArchived ? undefined : onTouchEnd}
-    >
+    <>
       <div 
-        className="shopping-list-item-content"
-        style={isArchived ? {} : getSwipeStyle()}
+        className={`shopping-list-item ${item.completed ? 'completed' : ''} ${isArchived ? 'archived' : ''}`}
+        onTouchStart={isArchived ? undefined : onTouchStart}
+        onTouchMove={isArchived ? undefined : onTouchMove}
+        onTouchEnd={isArchived ? undefined : onTouchEnd}
       >
-        {/* Hide checkbox for archived lists */}
+        <div 
+          className="shopping-list-item-content"
+          style={isArchived ? {} : getSwipeStyle()}
+        >
+          {/* Hide checkbox for archived lists */}
+          {!isArchived && (
+            <div 
+              className="shopping-list-item-checkbox"
+              onClick={handleToggleCompletion}
+            >
+              <div className={`checkbox ${item.completed ? 'checked' : ''}`}></div>
+            </div>
+          )}
+          
+          <div 
+            className="shopping-list-item-details"
+            onClick={isArchived ? undefined : onEdit}
+            style={isArchived ? { cursor: 'default' } : {}}
+          >
+            {item.quantity > 1 && (
+              <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
+            )}
+            {item.quantity == 1 && (
+              <div className="shopping-list-item-name">{item.name}</div>
+            )}
+          </div>
+          
+          {/* Actions removed - edit by tapping item, delete by swiping left */}
+        </div>
+        
+        {/* Delete button that appears when swiping (hidden for archived lists) */}
         {!isArchived && (
           <div 
-            className="shopping-list-item-checkbox"
-            onClick={handleToggleCompletion}
+            className="shopping-list-item-delete-button"
+            style={getDeleteButtonStyle()}
+            onClick={() => setShowDeleteConfirm(true)}
           >
-            <div className={`checkbox ${item.completed ? 'checked' : ''}`}></div>
+            <FiTrash2 size={20} />
           </div>
         )}
-        
-        <div 
-          className="shopping-list-item-details"
-          onClick={isArchived ? undefined : onEdit}
-          style={isArchived ? { cursor: 'default' } : {}}
-        >
-          {item.quantity > 1 && (
-            <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
-          )}
-          {item.quantity == 1 && (
-            <div className="shopping-list-item-name">{item.name}</div>
-          )}
-        </div>
-        
-        {/* Actions removed - edit by tapping item, delete by swiping left */}
       </div>
       
-      {/* Delete button that appears when swiping (hidden for archived lists) */}
-      {!isArchived && (
-        <div 
-          className="shopping-list-item-delete-button"
-          style={getDeleteButtonStyle()}
-          onClick={handleDelete}
-        >
-          <FiTrash2 size={20} />
-        </div>
-      )}
-    </div>
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${item.name}"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+    </>
   );
 };
 

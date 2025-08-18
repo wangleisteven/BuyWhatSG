@@ -4,8 +4,14 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { SECURE_CONFIG } from './secrets';
+import { CURRENT_ENV, envLog } from './envConfig';
 
+// Get environment-specific Firebase configuration
 const firebaseConfig = SECURE_CONFIG.FIREBASE;
+
+// Log environment information (only in development)
+envLog('Firebase initializing in', CURRENT_ENV, 'environment');
+envLog('Using Firebase project:', firebaseConfig.projectId);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

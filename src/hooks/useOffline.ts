@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '../context/NotificationSystemContext';
+// import { useToast } from '../context/NotificationSystemContext'; // Commented out as not currently used
 
 type UseOfflineReturn = {
   isOffline: boolean;
@@ -14,7 +14,7 @@ type UseOfflineReturn = {
 export const useOffline = (): UseOfflineReturn => {
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const [wasOffline, setWasOffline] = useState<boolean>(false);
-  const { addToast } = useToast();
+  // const { addToast } = useToast(); // Commented out as not currently used
 
   const resetWasOffline = useCallback(() => {
     setWasOffline(false);

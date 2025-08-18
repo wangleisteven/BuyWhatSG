@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { FiX, FiInfo, FiCheck, FiAlertTriangle, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-import type { ToastData, AlertType, AlertOptions } from '../../types';
 import './NotificationSystem.css';
 
 // Unified notification types

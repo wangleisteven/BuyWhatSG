@@ -28,11 +28,9 @@ type ShoppingListContextType = {
   addItem: (listId: string, item: Omit<ShoppingItem, 'id' | 'position'>) => Promise<void>;
   addItems: (listId: string, items: Omit<ShoppingItem, 'id' | 'position'>[]) => Promise<void>;
   updateItem: (listId: string, itemId: string, updates: Partial<ShoppingItem>) => Promise<void>;
-  deleteItem: (listId: string, itemId: string) => Promise<ShoppingItem | null>;
+  deleteItem: (listId: string, itemId: string) => Promise<void>;
   toggleItemCompletion: (listId: string, itemId: string) => Promise<void>;
   reorderItems: (listId: string, startIndex: number, endIndex: number) => Promise<void>;
-  lastDeletedItem: { listId: string; item: ShoppingItem } | null;
-  undoDeleteItem: () => void;
 };
 
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined);
@@ -68,7 +66,7 @@ const createEducationList = (): ShoppingList => {
       },
       {
         id: generateId(),
-        name: 'Swipe the item to the left 🫲 to delete the item',
+        name: 'Swipe the item to the left 🫲 to delete (with confirmation)',
         quantity: 1,
         completed: false,
         category: 'general',
@@ -116,7 +114,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   }, [setListsOriginal, pendingOperations.length, isProcessingQueue]);
   
   const [currentList, setCurrentList] = useState<ShoppingList | null>(null);
-  const [lastDeletedItem, setLastDeletedItem] = useState<{ listId: string; item: ShoppingItem } | null>(null);
+
   const [_isLoadingData, setIsLoadingData] = useState(false);
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
   
@@ -833,7 +831,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
                 await updateItemInFirestore(itemId, updatesWithTimestamp, user.id);
               } catch (updateError: any) {
                 // If the error is because the document doesn't exist, save as a new item instead
-                if (updateError.code === 'not-found' || updateError.message?.includes('No document to update')) {
+                if (updateError.code === 'not-found' || updateError.code === 'NOT_FOUND' || updateError.message?.includes('No document to update')) {
                   const updatedItem: ShoppingItem = { ...currentItem!, ...updatesWithTimestamp };
                   const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
                   
@@ -878,12 +876,11 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Delete an item from a shopping list
-  const deleteItem = async (listId: string, itemId: string): Promise<ShoppingItem | null> => {
-    let deletedItem: ShoppingItem | null = null;
-
+  const deleteItem = async (listId: string, itemId: string): Promise<void> => {
     try {
       // Find the item to delete first
       const list = lists.find(l => l.id === listId);
+      let deletedItem: ShoppingItem | null = null;
       if (list) {
         const itemToDelete = list.items.find(item => item.id === itemId);
         if (itemToDelete) {
@@ -904,10 +901,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           return list;
         })
       );
-
-      if (deletedItem) {
-        setLastDeletedItem({ listId, item: deletedItem });
-      }
       
       // Queue Firebase operation if authenticated
       if (isAuthenticated && user) {
@@ -918,7 +911,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             await deleteItemFromFirestore(idToDelete, user.id);
           } catch (error: any) {
             // If the document doesn't exist, that's fine - it's already deleted
-            if (error.code === 'not-found' || error.message?.includes('No document to update')) {
+            if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {
               console.log(`Item ${itemId} not found in Firestore, already deleted or never existed`);
             } else {
               throw error; // Re-throw other errors
@@ -926,8 +919,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           }
         });
       }
-
-      return deletedItem;
     } catch (error) {
       console.error('Error deleting item:', error);
       showAlert({
@@ -936,7 +927,6 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         message: 'Failed to delete item. Please try again.',
         cancelText: 'OK'
       });
-      return null;
     }
   };
 
@@ -1012,7 +1002,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
               await updateItemInFirestore(idToUpdate, { position: item.position }, user.id);
             } catch (error: any) {
               // If the error is because the document doesn't exist, save as a new item instead
-              if (error.code === 'not-found' || error.message?.includes('No document to update')) {
+              if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {
                 console.log(`Item ${item.id} not found in Firestore, saving as new item`);
                 await saveItemToFirestore(item, listId, user.id);
               } else {
@@ -1047,27 +1037,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Undo the last item deletion
-  const undoDeleteItem = () => {
-    if (!lastDeletedItem) return;
 
-    const { listId, item } = lastDeletedItem;
-
-    setLists(prevLists =>
-      prevLists.map(list => {
-        if (list.id === listId) {
-          return {
-            ...list,
-            items: [...list.items, item],
-            updatedAt: Date.now()
-          };
-        }
-        return list;
-      })
-    );
-
-    setLastDeletedItem(null);
-  };
 
   return (
     <ShoppingListContext.Provider
@@ -1087,8 +1057,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         deleteItem,
         toggleItemCompletion,
         reorderItems,
-        lastDeletedItem,
-        undoDeleteItem
+
       }}
     >
       {children}

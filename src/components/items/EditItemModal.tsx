@@ -7,6 +7,7 @@ import { compressImage, isImageFile } from '../../utils';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
 import './Items.css';
 
 type EditItemModalProps = {
@@ -14,16 +15,16 @@ type EditItemModalProps = {
   listId: string;
   onClose: () => void;
 };
-
 const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   const { updateItem, deleteItem } = useShoppingList();
+  const { addToast } = useToast();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity);
   const [category, setCategory] = useState(item.category);
   const [photoURL, setPhotoURL] = useState(item.photoURL || '');
   const [isUploading, setIsUploading] = useState(false);
-  const { addToast } = useToast();
-  const [errorMessage, setErrorMessage] = useState('');
+  // const [errorMessage, setErrorMessage] = useState(''); // Commented out as not currently used
   
   // Handle auto-recommendation when item name loses focus
   const handleItemNameBlur = () => {
@@ -63,16 +64,21 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
     }
   };
   
-  // Handle item deletion - same behavior as swipe to delete
-  const handleDelete = async () => {
+  // Handle item deletion confirmation
+  const handleDeleteConfirm = async () => {
     try {
       await deleteItem(listId, item.id);
+      setShowDeleteConfirm(false);
       onClose(); // Dismiss the popup
-      // The undo toast will be shown automatically by the ListDetail component
     } catch (error) {
       console.error('Error deleting item:', error);
       // Error is already handled in the context with showAlert
     }
+  };
+
+  // Handle delete confirmation cancel
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
   
   // Handle photo upload
@@ -127,7 +133,8 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   };
 
   return (
-    <div className="modal-overlay">
+    <>
+      <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
           <h3>Edit Item</h3>
@@ -221,7 +228,7 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
             <button 
               type="button" 
               className="button-outline danger"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
             >
               Delete
             </button>
@@ -245,7 +252,19 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
       </div>
       
 
-    </div>
+      </div>
+      
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${item.name}"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+    </>
   );
 };
 

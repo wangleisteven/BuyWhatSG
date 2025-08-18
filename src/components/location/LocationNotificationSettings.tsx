@@ -7,9 +7,7 @@ interface LocationNotificationSettingsProps {
   className?: string;
 }
 
-export const LocationNotificationSettings: React.FC<LocationNotificationSettingsProps> = ({
-  className = '',
-}) => {
+export const LocationNotificationSettings: React.FC<LocationNotificationSettingsProps> = () => {
   const navigate = useNavigate();
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   
