@@ -19,6 +19,7 @@ dist-ssr
 .env.test.local
 .env.production.local
 .env.production
+.env.production.local
 
 # Secure configuration (contains sensitive data)
 src/config/secrets.ts

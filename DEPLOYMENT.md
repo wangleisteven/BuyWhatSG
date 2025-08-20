@@ -1,133 +1,200 @@
 # Deployment Guide for BuyWhatSG
 
-This guide provides step-by-step instructions for deploying the BuyWhatSG application to production with a valid domain and SSL certificate.
+This comprehensive guide provides detailed step-by-step instructions for deploying the BuyWhatSG application to production using Firebase Hosting with a custom domain (buywhatsg.com) from Namecheap and SSL certificate setup.
 
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Environment Configuration](#environment-configuration)
-3. [Building for Production](#building-for-production)
-4. [Domain Setup](#domain-setup)
-5. [SSL Certificate](#ssl-certificate)
-6. [Deployment Options](#deployment-options)
-   - [Firebase Hosting](#firebase-hosting)
-   - [Vercel](#vercel)
-   - [Netlify](#netlify)
-   - [Custom Server](#custom-server)
-7. [Post-Deployment Verification](#post-deployment-verification)
+2. [Domain Purchase from Namecheap](#domain-purchase-from-namecheap)
+3. [Firebase Project Setup](#firebase-project-setup)
+4. [Environment Configuration](#environment-configuration)
+5. [Building for Production](#building-for-production)
+6. [Firebase Hosting Configuration](#firebase-hosting-configuration)
+7. [Custom Domain Setup](#custom-domain-setup)
+8. [SSL Certificate Configuration](#ssl-certificate-configuration)
+9. [Deployment Process](#deployment-process)
+10. [Post-Deployment Verification](#post-deployment-verification)
+11. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+Before starting the deployment process, ensure you have:
 
 - Node.js v18 or higher installed
 - Git installed
-- Access to your domain registrar (for domain configuration)
-- Firebase account (if using Firebase Hosting)
-- Vercel or Netlify account (if using these platforms)
+- A Google account for Firebase
+- A Namecheap account
+- Firebase CLI installed globally: `npm install -g firebase-tools`
+- Access to your project's source code
+
+## Domain Purchase from Namecheap
+
+### Step 1: Purchase the Domain
+
+1. **Visit Namecheap**: Go to [namecheap.com](https://www.namecheap.com)
+2. **Search for Domain**: Enter "buywhatsg.com" in the search bar
+3. **Add to Cart**: If available, add the domain to your cart
+4. **Complete Purchase**: 
+   - Choose registration period (1-10 years)
+   - Add domain privacy protection (recommended)
+   - Complete the checkout process
+   - Verify your email address when prompted
+
+### Step 2: Access Domain Management
+
+1. **Login to Namecheap**: Go to your Namecheap account
+2. **Navigate to Domain List**: Click on "Domain List" in the left sidebar
+3. **Manage Domain**: Click "Manage" next to buywhatsg.com
+4. **Access DNS Settings**: Click on "Advanced DNS" tab
+
+*Note: Keep this tab open as you'll need to configure DNS records later.*
+
+## Firebase Project Setup
+
+### Step 1: Create Firebase Project
+
+1. **Visit Firebase Console**: Go to [console.firebase.google.com](https://console.firebase.google.com)
+2. **Create New Project**:
+   - Click "Create a project"
+   - Enter project name: "BuyWhatSG" or "buywhatsg-production"
+   - Choose whether to enable Google Analytics (recommended)
+   - Select or create a Google Analytics account
+   - Click "Create project"
+
+### Step 2: Configure Firebase Services
+
+#### Enable Authentication
+1. **Navigate to Authentication**: In the Firebase console, click "Authentication" in the left sidebar
+2. **Get Started**: Click "Get started" if it's your first time
+3. **Configure Sign-in Methods**:
+   - Click on "Sign-in method" tab
+   - Enable the authentication providers you need:
+     - Email/Password
+     - Google
+     - Any other providers your app uses
+4. **Configure Authorized Domains**:
+   - In the "Sign-in method" tab, scroll down to "Authorized domains"
+   - Add "buywhatsg.com" and "www.buywhatsg.com"
+
+#### Setup Firestore Database
+1. **Navigate to Firestore**: Click "Firestore Database" in the left sidebar
+2. **Create Database**:
+   - Click "Create database"
+   - Choose "Start in production mode" for security
+   - Select a location (choose closest to your users, e.g., asia-southeast1 for Singapore)
+3. **Configure Security Rules**: Update rules based on your app's requirements
+
+#### Setup Firebase Storage (if needed)
+1. **Navigate to Storage**: Click "Storage" in the left sidebar
+2. **Get Started**: Click "Get started"
+3. **Configure Security Rules**: Set up rules for file uploads
+4. **Choose Location**: Select the same region as your Firestore
+
+### Step 3: Get Firebase Configuration
+
+1. **Project Settings**: Click the gear icon next to "Project Overview"
+2. **General Tab**: Scroll down to "Your apps" section
+3. **Add Web App**:
+   - Click the web icon (</>) to add a web app
+   - Enter app nickname: "BuyWhatSG Web"
+   - Check "Also set up Firebase Hosting" (important!)
+   - Click "Register app"
+4. **Copy Configuration**: Copy the Firebase config object for later use
 
 ## Environment Configuration
 
-The application now includes an environment configuration system that automatically switches between development and production settings.
+### Step 1: Create Production Environment File
 
-1. Create a production-specific `.env.production` file:
+1. **Navigate to Project Root**: Open terminal in your project directory
+2. **Create Production Environment File**:
 
 ```bash
 cp .env .env.production
 ```
 
-2. Edit `.env.production` with your production values:
+3. **Edit Production Environment Variables**:
 
 ```env
-# Gemini API Key for AI-powered photo text extraction
-VITE_GEMINI_API_KEY=your_production_gemini_api_key_here
+# Firebase Configuration (from Firebase Console)
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+VITE_FIREBASE_APP_ID=1:123456789:web:abcdef123456
 
-# OpenAI API Key for voice recognition features
-VITE_OPENAI_API_KEY=your_production_openai_api_key_here
+# API Keys for Production
+VITE_GEMINI_API_KEY=your_production_gemini_api_key
+VITE_OPENAI_API_KEY=your_production_openai_api_key
+VITE_ONEMAP_EMAIL=your_onemap_email
+VITE_ONEMAP_PASSWORD=your_onemap_password
 
-# Any other production-specific environment variables
+# Production URL
+VITE_APP_URL=https://buywhatsg.com
 ```
 
-3. The application will automatically use these values when built for production.
+### Step 2: Update .gitignore
+
+Ensure your `.gitignore` includes:
+
+```gitignore
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+```
 
 ## Building for Production
 
-To create a production build:
+### Step 1: Install Dependencies
+
+```bash
+npm install
+```
+
+### Step 2: Build the Application
 
 ```bash
 npm run build
 ```
 
-This will generate optimized files in the `dist` directory, ready for deployment.
+This creates an optimized production build in the `dist` directory.
 
-## Domain Setup
-
-1. Purchase a domain (e.g., buywhat.sg) from a domain registrar like Namecheap, GoDaddy, or Google Domains.
-
-2. Configure your DNS settings based on your chosen hosting provider:
-
-   - For Firebase Hosting: Add the required A records pointing to Firebase's IP addresses
-   - For Vercel/Netlify: Follow their domain configuration instructions
-   - For custom hosting: Point your domain to your server's IP address
-
-3. Set up any required subdomains (e.g., www.buywhat.sg).
-
-## SSL Certificate
-
-Secure your site with HTTPS using an SSL certificate:
-
-### Option 1: Let's Encrypt (for custom servers)
-
-1. Install Certbot on your server:
+### Step 3: Test the Build Locally (Optional)
 
 ```bash
-# For Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install certbot
-
-# For CentOS/RHEL
-sudo yum install certbot
+npm run preview
 ```
 
-2. Obtain and install a certificate:
+## Firebase Hosting Configuration
 
-```bash
-sudo certbot --nginx -d buywhat.sg -d www.buywhat.sg
-```
+### Step 1: Initialize Firebase in Your Project
 
-3. Set up auto-renewal:
-
-```bash
-sudo certbot renew --dry-run
-```
-
-### Option 2: Managed SSL (for hosting platforms)
-
-Firebase Hosting, Vercel, and Netlify all provide free SSL certificates and handle the setup automatically when you configure your custom domain.
-
-## Deployment Options
-
-### Firebase Hosting
-
-1. Install Firebase CLI:
-
-```bash
-npm install -g firebase-tools
-```
-
-2. Login to Firebase:
+1. **Login to Firebase CLI**:
 
 ```bash
 firebase login
 ```
 
-3. Initialize Firebase in your project (if not already done):
+2. **Initialize Firebase Hosting**:
 
 ```bash
 firebase init hosting
 ```
 
-4. Configure `firebase.json` for SPA routing:
+3. **Configuration Options**:
+   - Select your Firebase project from the list
+   - Set public directory to: `dist`
+   - Configure as single-page app: `Yes`
+   - Set up automatic builds with GitHub: `No` (for now)
+   - Don't overwrite `dist/index.html` if prompted
+
+### Step 2: Configure firebase.json
+
+Update your `firebase.json` file with the following configuration:
 
 ```json
 {
@@ -146,29 +213,28 @@ firebase init hosting
     ],
     "headers": [
       {
-        "source": "/**",
+        "source": "**",
         "headers": [
           {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000"
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-XSS-Protection",
+            "value": "1; mode=block"
           }
         ]
       },
       {
-        "source": "/@(js|css)/**",
+        "source": "**/*.@(js|css|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=31536000"
-          }
-        ]
-      },
-      {
-        "source": "/@(img|icons)/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000"
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       },
@@ -186,124 +252,179 @@ firebase init hosting
 }
 ```
 
-5. Deploy to Firebase:
+## Custom Domain Setup
+
+### Step 1: Deploy to Firebase First
 
 ```bash
+firebase deploy --only hosting
+```
+
+Note the Firebase hosting URL (e.g., `https://your-project.web.app`)
+
+### Step 2: Add Custom Domain in Firebase
+
+1. **Navigate to Hosting**: In Firebase Console, go to "Hosting"
+2. **Add Custom Domain**:
+   - Click "Add custom domain"
+   - Enter: `buywhatsg.com`
+   - Click "Continue"
+3. **Verify Ownership**: Firebase will provide DNS records to verify domain ownership
+4. **Note the DNS Records**: Firebase will show you the required DNS records
+
+### Step 3: Configure DNS in Namecheap
+
+1. **Return to Namecheap**: Go back to your Namecheap "Advanced DNS" tab
+2. **Delete Default Records**: Remove any existing A records and CNAME records
+3. **Add Firebase DNS Records**: Add the records provided by Firebase:
+
+   **For Root Domain (buywhatsg.com)**:
+   - Type: `A Record`
+   - Host: `@`
+   - Value: `151.101.1.195` (Firebase IP)
+   - TTL: `Automatic`
+   
+   - Type: `A Record`
+   - Host: `@`
+   - Value: `151.101.65.195` (Firebase IP)
+   - TTL: `Automatic`
+
+   **For WWW Subdomain**:
+   - Type: `CNAME Record`
+   - Host: `www`
+   - Value: `buywhatsg.com.`
+   - TTL: `Automatic`
+
+4. **Save Changes**: Click "Save all changes"
+
+*Note: DNS propagation can take 24-48 hours, but usually completes within a few hours.*
+
+### Step 4: Complete Domain Setup in Firebase
+
+1. **Return to Firebase Console**: Go back to the custom domain setup
+2. **Verify Domain**: Click "Verify" (may take some time for DNS to propagate)
+3. **Wait for SSL**: Firebase will automatically provision an SSL certificate
+
+## SSL Certificate Configuration
+
+### Automatic SSL with Firebase
+
+Firebase Hosting automatically provides SSL certificates for custom domains:
+
+1. **Automatic Provisioning**: Once your domain is verified, Firebase automatically provisions an SSL certificate
+2. **Let's Encrypt**: Firebase uses Let's Encrypt for SSL certificates
+3. **Auto-Renewal**: Certificates are automatically renewed before expiration
+4. **HTTPS Redirect**: Firebase automatically redirects HTTP traffic to HTTPS
+
+### Verify SSL Setup
+
+1. **Check Certificate Status**: In Firebase Console > Hosting, verify the SSL status shows "Active"
+2. **Test HTTPS**: Visit `https://buywhatsg.com` to ensure SSL is working
+3. **Check Certificate Details**: Click the lock icon in your browser to view certificate details
+
+## Deployment Process
+
+### Step 1: Final Build and Deploy
+
+```bash
+# Build the application
 npm run build
-firebase deploy
+
+# Deploy to Firebase
+firebase deploy --only hosting
 ```
 
-6. Configure your custom domain in the Firebase Console under Hosting > Add custom domain.
+### Step 2: Set Up Deployment Script
 
-### Vercel
+Create a deployment script in `package.json`:
 
-1. Install Vercel CLI:
-
-```bash
-npm install -g vercel
-```
-
-2. Deploy to Vercel:
-
-```bash
-vercel
-```
-
-3. For production deployment:
-
-```bash
-vercel --prod
-```
-
-4. Configure your custom domain in the Vercel dashboard.
-
-### Netlify
-
-1. Install Netlify CLI:
-
-```bash
-npm install -g netlify-cli
-```
-
-2. Deploy to Netlify:
-
-```bash
-netlify deploy
-```
-
-3. For production deployment:
-
-```bash
-netlify deploy --prod
-```
-
-4. Configure your custom domain in the Netlify dashboard.
-
-### Custom Server
-
-If you're using your own server:
-
-1. Set up a web server (Nginx or Apache):
-
-```bash
-# For Ubuntu/Debian with Nginx
-sudo apt-get update
-sudo apt-get install nginx
-```
-
-2. Configure Nginx for your application:
-
-```nginx
-server {
-    listen 80;
-    server_name buywhat.sg www.buywhat.sg;
-
-    location / {
-        root /var/www/buywhat.sg;
-        try_files $uri $uri/ /index.html;
-        index index.html;
-    }
+```json
+{
+  "scripts": {
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:preview": "npm run build && firebase hosting:channel:deploy preview"
+  }
 }
 ```
 
-3. Upload your build files:
+### Step 3: Future Deployments
+
+For future updates:
 
 ```bash
-scp -r dist/* user@your-server:/var/www/buywhat.sg/
+npm run deploy
 ```
-
-4. Set up SSL with Let's Encrypt as described above.
 
 ## Post-Deployment Verification
 
-After deployment, verify that:
+### Step 1: Functional Testing
 
-1. The website loads correctly at your domain (https://buywhat.sg)
-2. HTTPS is working properly (green lock icon in browser)
-3. All features work as expected
-4. PWA installation works correctly
-5. Firebase authentication and database connections are functioning
+1. **Visit Your Site**: Go to `https://buywhatsg.com`
+2. **Test All Features**:
+   - User authentication
+   - Database operations
+   - File uploads (if applicable)
+   - PWA installation
+   - Mobile responsiveness
+
+### Step 2: Performance Testing
+
+1. **Google PageSpeed Insights**: Test your site at [pagespeed.web.dev](https://pagespeed.web.dev)
+2. **Lighthouse Audit**: Run Lighthouse in Chrome DevTools
+3. **Firebase Performance**: Check Firebase Performance monitoring
+
+### Step 3: Security Verification
+
+1. **SSL Test**: Use [SSL Labs](https://www.ssllabs.com/ssltest/) to test SSL configuration
+2. **Security Headers**: Check security headers at [securityheaders.com](https://securityheaders.com)
+3. **Firebase Security Rules**: Review and test your Firestore security rules
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues and Solutions
 
-1. **White screen after deployment**: Check browser console for errors. Ensure all paths are correct and the server is configured to serve the SPA correctly.
+#### Domain Not Resolving
+- **Check DNS Propagation**: Use [whatsmydns.net](https://www.whatsmydns.net) to check DNS propagation
+- **Verify DNS Records**: Ensure all DNS records in Namecheap match Firebase requirements
+- **Wait for Propagation**: DNS changes can take up to 48 hours
 
-2. **API calls failing**: Verify that your environment variables are correctly set and that CORS is properly configured.
+#### SSL Certificate Issues
+- **Domain Verification**: Ensure domain ownership is verified in Firebase
+- **DNS Records**: Verify all DNS records are correctly configured
+- **Wait for Provisioning**: SSL certificate provisioning can take several hours
 
-3. **SSL certificate issues**: Ensure your certificate is properly installed and renewed.
+#### Firebase Deployment Errors
+- **Check Firebase CLI**: Ensure you're logged in: `firebase login`
+- **Project Selection**: Verify correct project: `firebase use --add`
+- **Build Errors**: Check build output for errors: `npm run build`
 
-4. **Firebase connection issues**: Check that your Firebase configuration is correct for the production environment.
+#### Authentication Issues
+- **Authorized Domains**: Ensure your domain is added to Firebase Auth authorized domains
+- **CORS Issues**: Check browser console for CORS errors
+- **API Keys**: Verify all environment variables are correctly set
 
-### Monitoring
+### Monitoring and Maintenance
 
-Consider setting up monitoring for your production application:
+#### Set Up Monitoring
+1. **Firebase Analytics**: Enable Google Analytics in Firebase
+2. **Performance Monitoring**: Enable Firebase Performance
+3. **Crashlytics**: Set up Firebase Crashlytics for error tracking
+4. **Uptime Monitoring**: Use services like UptimeRobot or Pingdom
 
-- Firebase Performance Monitoring
-- Google Analytics
-- Sentry for error tracking
+#### Regular Maintenance
+1. **Update Dependencies**: Regularly update npm packages
+2. **Security Updates**: Monitor for security vulnerabilities
+3. **Performance Optimization**: Regular performance audits
+4. **Backup**: Regular backups of Firestore data
+
+### Support Resources
+
+- **Firebase Documentation**: [firebase.google.com/docs](https://firebase.google.com/docs)
+- **Namecheap Support**: [namecheap.com/support](https://www.namecheap.com/support)
+- **Firebase Community**: [firebase.google.com/community](https://firebase.google.com/community)
 
 ---
 
-For additional support or questions, please refer to the project documentation or contact the development team.
+**Congratulations!** Your BuyWhatSG application should now be live at `https://buywhatsg.com` with a secure SSL certificate and professional hosting setup.
+
+For any issues or questions during deployment, refer to the troubleshooting section or consult the official documentation for each service.
