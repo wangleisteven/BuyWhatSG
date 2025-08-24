@@ -1,0 +1,103 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff9a9e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fecfef;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="fruits" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ee5a24;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="dairy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#74b9ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0984e3;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="household" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00b894;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00a085;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="300" height="200" fill="url(#bg3)"/>
+  
+  <!-- Unorganized list (left side) -->
+  <rect x="20" y="30" width="80" height="140" rx="8" fill="#fff" stroke="#ddd" stroke-width="2"/>
+  <rect x="25" y="35" width="70" height="20" rx="4" fill="#6c757d"/>
+  <text x="60" y="47" text-anchor="middle" font-family="Arial" font-size="9" fill="#fff" font-weight="bold">Mixed List</text>
+  
+  <!-- Mixed items -->
+  <text x="30" y="70" font-family="Arial" font-size="8" fill="#333">• Apples</text>
+  <text x="30" y="85" font-family="Arial" font-size="8" fill="#333">• Milk</text>
+  <text x="30" y="100" font-family="Arial" font-size="8" fill="#333">• Soap</text>
+  <text x="30" y="115" font-family="Arial" font-size="8" fill="#333">• Bananas</text>
+  <text x="30" y="130" font-family="Arial" font-size="8" fill="#333">• Cheese</text>
+  <text x="30" y="145" font-family="Arial" font-size="8" fill="#333">• Detergent</text>
+  
+  <!-- Arrow with AI magic -->
+  <path d="M110 100 L140 100 M135 95 L140 100 L135 105" stroke="#fff" stroke-width="3" fill="none"/>
+  <text x="125" y="90" text-anchor="middle" font-family="Arial" font-size="8" fill="#fff" font-weight="bold">AI Sort</text>
+  
+  <!-- Magic sparkles around arrow -->
+  <circle cx="120" cy="85" r="1.5" fill="#ffd700">
+    <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="130" cy="115" r="1" fill="#ffd700">
+    <animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite" begin="0.3s"/>
+  </circle>
+  
+  <!-- Organized categories (right side) -->
+  
+  <!-- Fruits Category -->
+  <rect x="160" y="20" width="120" height="45" rx="6" fill="url(#fruits)" opacity="0">
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1s" fill="freeze"/>
+  </rect>
+  <text x="220" y="35" text-anchor="middle" font-family="Arial" font-size="9" fill="#fff" font-weight="bold" opacity="0">
+    🍎 Fruits
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1s" fill="freeze"/>
+  </text>
+  <text x="170" y="50" font-family="Arial" font-size="8" fill="#fff" opacity="0">
+    • Apples • Bananas
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1.2s" fill="freeze"/>
+  </text>
+  
+  <!-- Dairy Category -->
+  <rect x="160" y="75" width="120" height="45" rx="6" fill="url(#dairy)" opacity="0">
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1.5s" fill="freeze"/>
+  </rect>
+  <text x="220" y="90" text-anchor="middle" font-family="Arial" font-size="9" fill="#fff" font-weight="bold" opacity="0">
+    🥛 Dairy
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1.5s" fill="freeze"/>
+  </text>
+  <text x="170" y="105" font-family="Arial" font-size="8" fill="#fff" opacity="0">
+    • Milk • Cheese
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="1.7s" fill="freeze"/>
+  </text>
+  
+  <!-- Household Category -->
+  <rect x="160" y="130" width="120" height="45" rx="6" fill="url(#household)" opacity="0">
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="2s" fill="freeze"/>
+  </rect>
+  <text x="220" y="145" text-anchor="middle" font-family="Arial" font-size="9" fill="#fff" font-weight="bold" opacity="0">
+    🧽 Household
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="2s" fill="freeze"/>
+  </text>
+  <text x="170" y="160" font-family="Arial" font-size="8" fill="#fff" opacity="0">
+    • Soap • Detergent
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="2.2s" fill="freeze"/>
+  </text>
+  
+  <!-- Connecting lines animation -->
+  <g opacity="0">
+    <path d="M95 70 Q130 70 165 40" stroke="#ff6b6b" stroke-width="2" fill="none" stroke-dasharray="5,5">
+      <animate attributeName="stroke-dashoffset" values="10;0" dur="1s" repeatCount="indefinite"/>
+    </path>
+    <path d="M95 85 Q130 85 165 95" stroke="#74b9ff" stroke-width="2" fill="none" stroke-dasharray="5,5">
+      <animate attributeName="stroke-dashoffset" values="10;0" dur="1s" repeatCount="indefinite" begin="0.2s"/>
+    </path>
+    <path d="M95 100 Q130 100 165 150" stroke="#00b894" stroke-width="2" fill="none" stroke-dasharray="5,5">
+      <animate attributeName="stroke-dashoffset" values="10;0" dur="1s" repeatCount="indefinite" begin="0.4s"/>
+    </path>
+    <animate attributeName="opacity" values="0;1" dur="0.5s" begin="0.8s" fill="freeze"/>
+  </g>
+</svg>
