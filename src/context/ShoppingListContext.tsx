@@ -913,9 +913,18 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             // If the document doesn't exist, that's fine - it's already deleted
             if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {
               console.log(`Item ${itemId} not found in Firestore, already deleted or never existed`);
-            } else {
-              throw error; // Re-throw other errors
+              return; // Exit gracefully without throwing
             }
+            
+            // Handle permission errors (item might not belong to user or security rules issue)
+            if (error.code === 'permission-denied') {
+              console.log(`Permission denied for item ${itemId}, might be an orphaned local item`);
+              return; // Exit gracefully without throwing
+            }
+            
+            // For other errors, log but don't throw to prevent the sync error popup
+            console.warn(`Failed to delete item ${itemId} from Firestore:`, error);
+            // Don't throw the error to prevent showing "sync error" popup for item deletions
           }
         });
       }

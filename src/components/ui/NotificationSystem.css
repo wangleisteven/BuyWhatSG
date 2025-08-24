@@ -213,7 +213,7 @@
 }
 
 .notification-container--toasts {
-  top: 20px;
+  bottom: calc(var(--bottom-nav-height) + 20px);
   right: 20px;
   max-width: 400px;
 }
@@ -268,7 +268,7 @@
 /* Responsive design */
 @media (max-width: 480px) {
   .notification-container--toasts {
-    top: 10px;
+    bottom: calc(var(--bottom-nav-height) + 10px);
     right: 10px;
     left: 10px;
     max-width: none;

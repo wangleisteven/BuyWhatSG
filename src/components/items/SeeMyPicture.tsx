@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { recommendCategory } from '../../utils/categoryRecommendation';
 import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';
+import shoppingListSample from '../../assets/shopping_list_sample.jpg';
 import './SeeMyPicture.css';
 
 type SeeMyPictureProps = {
@@ -184,7 +185,7 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
                 <h5>Tips for better results:</h5>
                 <div className="sample-image-container">
                   <img 
-                    src="/src/assets/shopping_list_sample.jpg" 
+                    src={shoppingListSample} 
                     alt="Example of a good quality shopping list photo"
                     className="sample-image"
                   />
