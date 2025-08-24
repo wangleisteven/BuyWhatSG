@@ -296,13 +296,15 @@
   }
 
   .onboarding-buttons {
-    flex-direction: column;
+    flex-direction: row;
     gap: 12px;
   }
 
   .onboarding-nav-btn {
-    width: 100%;
+    flex: 1;
     justify-content: center;
+    padding: 12px 16px;
+    font-size: 15px;
   }
 
   .onboarding-nav-btn.next,
