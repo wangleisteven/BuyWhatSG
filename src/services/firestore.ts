@@ -162,6 +162,7 @@ export const updateListInFirestore = async (listId: string, updates: Partial<Sho
     
     await updateDoc(listRef, {
       ...cleanUpdates,
+      userId, // Always include userId to satisfy security rules
       updatedAt: serverTimestamp()
     });
     return listId; // Return the existing ID if update succeeds
@@ -241,7 +242,7 @@ export const saveItemToFirestore = async (item: ShoppingItem, listId: string, us
 };
 
 // Update an item in Firestore
-export const updateItemInFirestore = async (itemId: string, updates: Partial<ShoppingItem>, _userId: string): Promise<void> => {
+export const updateItemInFirestore = async (itemId: string, updates: Partial<ShoppingItem>, userId: string): Promise<void> => {
   try {
     const itemRef = doc(db, ITEMS_COLLECTION, itemId);
     
@@ -252,6 +253,7 @@ export const updateItemInFirestore = async (itemId: string, updates: Partial<Sho
     
     await updateDoc(itemRef, {
       ...cleanUpdates,
+      userId, // Always include userId to satisfy security rules
       updatedAt: serverTimestamp()
     });
   } catch (error: any) {
@@ -277,10 +279,11 @@ export const updateItemInFirestore = async (itemId: string, updates: Partial<Sho
 };
 
 // Delete an item from Firestore
-export const deleteItemFromFirestore = async (itemId: string, _userId: string): Promise<void> => {
+export const deleteItemFromFirestore = async (itemId: string, userId: string): Promise<void> => {
   try {
     await updateDoc(doc(db, ITEMS_COLLECTION, itemId), {
       deleted: true,
+      userId, // Always include userId to satisfy security rules
       updatedAt: serverTimestamp()
     });
   } catch (error: any) {
