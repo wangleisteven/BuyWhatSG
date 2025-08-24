@@ -15,7 +15,7 @@ export const ENV_CONFIG = {
   // Base URLs
   BASE_URL: {
     development: 'https://localhost:5173',
-    production: 'https://buywhatsg-production.web.app' // Production Firebase Hosting URL
+    production: 'https://buywhatsg.com' // Production Firebase Hosting URL
   },
   
   // API Endpoints

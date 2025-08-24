@@ -46,8 +46,7 @@ if (CURRENT_ENV === 'development') {
   envBanner.style.fontSize = '12px'
   envBanner.style.zIndex = '9999'
   envBanner.style.borderTopLeftRadius = '5px'
-  // Use createTextNode to avoid TrustedHTML issues
-  envBanner.appendChild(document.createTextNode('DEV MODE'))
+  envBanner.textContent = 'DEV MODE'
   document.body.appendChild(envBanner)
 }
 
