@@ -114,11 +114,20 @@ const ShoppingListItem = ({
             onClick={isArchived ? undefined : onEdit}
             style={isArchived ? { cursor: 'default' } : {}}
           >
-            {item.quantity > 1 && (
-              <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
-            )}
-            {item.quantity == 1 && (
-              <div className="shopping-list-item-name">{item.name}</div>
+            <div className="shopping-list-item-text">
+              {item.quantity > 1 && (
+                <div className="shopping-list-item-name"><span className="shopping-list-item-quantity">[x {item.quantity}]</span> {item.name}</div>
+              )}
+              {item.quantity == 1 && (
+                <div className="shopping-list-item-name">{item.name}</div>
+              )}
+            </div>
+            
+            {/* Thumbnail image */}
+            {item.photoURL && (
+              <div className="shopping-list-item-thumbnail">
+                <img src={item.photoURL} alt={item.name} />
+              </div>
             )}
           </div>
           
