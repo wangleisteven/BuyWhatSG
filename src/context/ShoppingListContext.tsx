@@ -12,6 +12,7 @@ import {
   saveItemToFirestore,
   updateItemInFirestore,
   deleteItemFromFirestore,
+  saveOrUpdateItemInFirestore,
   syncLocalListsToFirestore
 } from '../services/firestore';
 
@@ -803,7 +804,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       // Queue Firebase operation if authenticated
       if (isAuthenticated && user) {
         queueOperation(async () => {
-          const firestoreId = await saveItemToFirestore(newItem, listId, user.id);
+          const firestoreId = await saveOrUpdateItemInFirestore(newItem, listId, user.id);
           
           // Update the local item with the Firestore ID
           if (firestoreId) {
@@ -840,10 +841,13 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const updateItem = async (listId: string, itemId: string, updates: Partial<ShoppingItem>) => {
     try {
       // Get the current item to check if it has a Firestore ID
-      let currentItem: ShoppingItem | undefined;
       const currentList = lists.find(list => list.id === listId);
-      if (currentList) {
-        currentItem = currentList.items.find(item => item.id === itemId);
+      const currentItem = currentList?.items.find(item => item.id === itemId);
+      
+      // If item not found, exit early
+      if (!currentItem) {
+        console.error(`Item ${itemId} not found in list ${listId}`);
+        return;
       }
       
       // Add updatedAt to the updates
@@ -868,21 +872,20 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       );
       
       // Queue Firebase operation if authenticated
-      if (isAuthenticated && user && currentItem) {
+      if (isAuthenticated && user) {
         queueOperation(async () => {
           try {
-            // Check if the item has a firestoreId
-            if (currentItem.firestoreId) {
-              // Item exists in Firestore, update it
-              const updatesWithFirestoreId = { ...updatesWithTimestamp, firestoreId: currentItem.firestoreId };
-              await updateItemInFirestore(itemId, updatesWithFirestoreId, user.id);
-            } else {
-              // Item doesn't exist in Firestore yet, save it as a new item
-              console.log(`Item ${itemId} doesn't have firestoreId, saving as new item to Firestore`);
-              const updatedItem: ShoppingItem = { ...currentItem, ...updatesWithTimestamp };
-              const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
-                
-              // Update the local item with the Firestore ID
+            // Create updated item with all required properties
+            const updatedItem: ShoppingItem = {
+              ...currentItem,
+              ...updatesWithTimestamp
+            };
+            
+            // Use saveOrUpdateItemInFirestore which handles both new and existing items
+            const firestoreId = await saveOrUpdateItemInFirestore(updatedItem, listId, user.id, currentItem.firestoreId);
+              
+            // Update the local item with the Firestore ID if it changed
+            if (firestoreId !== currentItem.firestoreId) {
               setLists(prevLists =>
                 prevLists.map(list => {
                   if (list.id === listId) {

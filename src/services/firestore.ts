@@ -391,6 +391,37 @@ export const saveItemToFirestore = async (item: ShoppingItem, listId: string, us
   }
 };
 
+// Save or update an item with a specific document ID
+export const saveOrUpdateItemInFirestore = async (item: ShoppingItem, listId: string, userId: string, firestoreId?: string): Promise<string> => {
+  try {
+    const itemData = itemToFirestore(item, listId, userId);
+    
+    if (firestoreId) {
+      // Update existing document
+      console.log('📝 saveOrUpdateItemInFirestore: Updating existing item with firestoreId:', firestoreId);
+      const itemRef = doc(db, ITEMS_COLLECTION, firestoreId);
+      await setDoc(itemRef, itemData, { merge: true });
+      return firestoreId;
+    } else {
+      // Create new document with auto-generated ID
+      console.log('📝 saveOrUpdateItemInFirestore: Creating new item');
+      const docRef = await addDoc(collection(db, ITEMS_COLLECTION), itemData);
+      return docRef.id;
+    }
+  } catch (error: any) {
+    console.error('Error saving/updating item to Firestore:', error);
+    
+    // Handle ERR_BLOCKED_BY_CLIENT gracefully
+    const errorMessage = error.message || String(error);
+    if (errorMessage.includes('ERR_BLOCKED_BY_CLIENT')) {
+      console.warn('ERR_BLOCKED_BY_CLIENT detected during item save/update, using fallback ID');
+      return firestoreId || item.id; // Return the firestoreId or item ID as fallback
+    }
+    
+    throw error;
+  }
+};
+
 // Update an item in Firestore
 export const updateItemInFirestore = async (itemId: string, updates: Partial<ShoppingItem>, userId: string): Promise<string> => {
   try {
@@ -414,11 +445,20 @@ export const updateItemInFirestore = async (itemId: string, updates: Partial<Sho
     
     console.log('🔧 updateItemInFirestore: Prepared clean updates:', cleanUpdates);
     
-    await updateDoc(itemRef, {
-      ...cleanUpdates,
-      userId, // Always include userId to satisfy security rules
-      updatedAt: serverTimestamp()
-    });
+    try {
+      await updateDoc(itemRef, {
+        ...cleanUpdates,
+        userId, // Always include userId to satisfy security rules
+        updatedAt: serverTimestamp()
+      });
+    } catch (updateError: any) {
+      // If document doesn't exist, we can't update it
+      if (updateError.code === 'not-found') {
+        console.log('📝 updateItemInFirestore: Document not found, cannot update non-existent item');
+        throw new Error('Cannot update item that does not exist in Firestore. Use saveItemToFirestore instead.');
+      }
+      throw updateError;
+    }
     
     console.log('✅ updateItemInFirestore: Successfully updated item:', itemId);
     return itemId;
