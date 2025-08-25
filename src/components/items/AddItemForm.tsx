@@ -3,7 +3,7 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { compressImage, isImageFile } from '../../utils';
-import { recommendCategory } from '../../utils/categoryClassifier';
+import { recommendCategoryAsync } from '../../utils/categoryClassifier';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
 import './Items.css';
@@ -24,10 +24,15 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   // const [errorMessage, setErrorMessage] = useState(''); // Commented out as not currently used
   
   // Handle auto-recommendation when item name loses focus
-  const handleItemNameBlur = () => {
+  const handleItemNameBlur = async () => {
     if (name.trim()) {
-      const recommendedCategory = recommendCategory(name.trim());
-      setCategory(recommendedCategory);
+      try {
+        const recommendedCategory = await recommendCategoryAsync(name.trim());
+        setCategory(recommendedCategory);
+      } catch (error) {
+        console.error('Failed to get category recommendation:', error);
+        // Keep current category on error
+      }
     }
   };
 

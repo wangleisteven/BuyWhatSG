@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAI } from 'firebase/ai';
 import { SECURE_CONFIG } from './secrets';
 import { CURRENT_ENV, envLog } from './envConfig';
 
@@ -21,6 +22,7 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const ai = getAI(app);
 
 // Enable offline persistence for Firestore
 enableIndexedDbPersistence(db).catch((err) => {

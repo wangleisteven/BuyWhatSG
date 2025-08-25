@@ -52,6 +52,7 @@ function App() {
           isOpen={showOnboarding} 
           onClose={handleCloseOnboarding} 
         />
+
       </Router>
     </AppProvider>
   )

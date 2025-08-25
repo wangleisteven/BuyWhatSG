@@ -547,6 +547,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   // Delete a shopping list
   const deleteList = async (id: string) => {
     try {
+      // Find the list to get its firestoreId before deleting
+      const listToDelete = lists.find(list => list.id === id);
+      
       // Update local state immediately for responsive UI
       setLists(prevLists => prevLists.filter(list => list.id !== id));
       if (currentList?.id === id) {
@@ -556,7 +559,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       // Queue Firebase operation if authenticated
       if (isAuthenticated && user) {
         queueOperation(async () => {
-          await deleteListFromFirestore(id, user.id);
+          await deleteListFromFirestore(id, user.id, listToDelete?.firestoreId);
         });
       }
     } catch (error) {
@@ -621,25 +624,71 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Archive a shopping list
-  const archiveList = (id: string) => {
-    setLists(prevLists =>
-      prevLists.map(list =>
-        list.id === id
-          ? { ...list, archived: true, updatedAt: Date.now() }
-          : list
-      )
-    );
+  const archiveList = async (id: string) => {
+    try {
+      // Update local state immediately for responsive UI
+      setLists(prevLists =>
+        prevLists.map(list =>
+          list.id === id
+            ? { ...list, archived: true, updatedAt: Date.now() }
+            : list
+        )
+      );
+      
+      // Queue Firebase operation if authenticated
+      if (isAuthenticated && user) {
+        queueOperation(async () => {
+          try {
+            await updateListInFirestore(id, { archived: true }, user.id);
+          } catch (error) {
+            console.error('Error archiving list in Firestore:', error);
+            throw error;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error archiving list:', error);
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to archive list. Please try again.',
+        cancelText: 'OK'
+      });
+    }
   };
 
   // Unarchive a shopping list
-  const unarchiveList = (id: string) => {
-    setLists(prevLists =>
-      prevLists.map(list =>
-        list.id === id
-          ? { ...list, archived: false, updatedAt: Date.now() }
-          : list
-      )
-    );
+  const unarchiveList = async (id: string) => {
+    try {
+      // Update local state immediately for responsive UI
+      setLists(prevLists =>
+        prevLists.map(list =>
+          list.id === id
+            ? { ...list, archived: false, updatedAt: Date.now() }
+            : list
+        )
+      );
+      
+      // Queue Firebase operation if authenticated
+      if (isAuthenticated && user) {
+        queueOperation(async () => {
+          try {
+            await updateListInFirestore(id, { archived: false }, user.id);
+          } catch (error) {
+            console.error('Error unarchiving list in Firestore:', error);
+            throw error;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error unarchiving list:', error);
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to unarchive list. Please try again.',
+        cancelText: 'OK'
+      });
+    }
   };
 
   // Add multiple items to a shopping list in batch
@@ -822,40 +871,36 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       if (isAuthenticated && user && currentItem) {
         queueOperation(async () => {
           try {
-            // First try to update using firestoreId if available
-            if (currentItem?.firestoreId) {
-              await updateItemInFirestore(currentItem.firestoreId, updatesWithTimestamp, user.id);
-            } else {
-              // If no firestoreId, try to update using local id (might fail if item doesn't exist in Firestore)
-              try {
-                await updateItemInFirestore(itemId, updatesWithTimestamp, user.id);
-              } catch (updateError: any) {
-                // If the error is because the document doesn't exist, save as a new item instead
-                if (updateError.code === 'not-found' || updateError.code === 'NOT_FOUND' || updateError.message?.includes('No document to update')) {
-                  const updatedItem: ShoppingItem = { ...currentItem!, ...updatesWithTimestamp };
-                  const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
+            // Pass the firestoreId in the updates object for proper handling
+            const updatesWithFirestoreId = { ...updatesWithTimestamp, firestoreId: currentItem?.firestoreId };
+            try {
+              await updateItemInFirestore(itemId, updatesWithFirestoreId, user.id);
+            } catch (updateError: any) {
+              // If the error is because the document doesn't exist, save as a new item instead
+              if (updateError.code === 'not-found' || updateError.code === 'NOT_FOUND' || updateError.message?.includes('No document to update')) {
+                const updatedItem: ShoppingItem = { ...currentItem!, ...updatesWithTimestamp };
+                const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
                   
-                  // Update the local item with the Firestore ID
-                  setLists(prevLists =>
-                    prevLists.map(list => {
-                      if (list.id === listId) {
-                        return {
-                          ...list,
-                          items: list.items.map(item =>
-                            item.id === itemId
-                              ? { ...item, firestoreId }
-                              : item
-                          )
-                        };
-                      }
-                      return list;
-                    })
-                  );
-                } else {
-                  // Re-throw if it's not a document not found error
-                  console.error('Error handling item update:', updateError);
-                  throw updateError;
-                }
+                // Update the local item with the Firestore ID
+                setLists(prevLists =>
+                  prevLists.map(list => {
+                    if (list.id === listId) {
+                      return {
+                        ...list,
+                        items: list.items.map(item =>
+                          item.id === itemId
+                            ? { ...item, firestoreId }
+                            : item
+                        )
+                      };
+                    }
+                    return list;
+                  })
+                );
+              } else {
+                // Re-throw if it's not a document not found error
+                console.error('Error handling item update:', updateError);
+                throw updateError;
               }
             }
           } catch (error) {
@@ -906,9 +951,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       if (isAuthenticated && user) {
         queueOperation(async () => {
           try {
-            // Use the Firestore ID if available, otherwise use the local ID
-            const idToDelete = deletedItem?.firestoreId || itemId;
-            await deleteItemFromFirestore(idToDelete, user.id);
+            // Pass both the local ID and Firestore ID to the function
+            await deleteItemFromFirestore(itemId, user.id, deletedItem?.firestoreId);
           } catch (error: any) {
             // If the document doesn't exist, that's fine - it's already deleted
             if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {
@@ -1006,9 +1050,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         await Promise.all(
           updatedItems.map(async item => {
             try {
-              // Use the Firestore ID if available, otherwise use the local ID
-              const idToUpdate = item.firestoreId || item.id;
-              await updateItemInFirestore(idToUpdate, { position: item.position }, user.id);
+              // Pass the firestoreId in the updates object for proper handling
+              const updates = { position: item.position, firestoreId: item.firestoreId };
+              await updateItemInFirestore(item.id, updates, user.id);
             } catch (error: any) {
               // If the error is because the document doesn't exist, save as a new item instead
               if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {

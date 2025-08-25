@@ -4,9 +4,8 @@ import { FiX, FiUpload, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
-import { recommendCategory } from '../../utils/categoryClassifier';
+import { recommendCategoryAsync } from '../../utils/categoryClassifier';
 import GeminiService from '../../services/geminiService';
-import { API_CONFIG } from '../../config/apiConfig';
 import shoppingListSample from '../../assets/shopping_list_sample.jpg';
 import './SeeMyPicture.css';
 
@@ -51,21 +50,19 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
 
   // Parse extracted text using Gemini AI
   const parseItemsFromText = async (text: string): Promise<ExtractedItem[]> => {
-    // Check if Gemini API key is configured
-    if (!API_CONFIG.GEMINI_API_KEY) {
-      return [];
-    }
-
     try {
-      const geminiService = new GeminiService(API_CONFIG.GEMINI_API_KEY);
+      const geminiService = new GeminiService();
       const geminiItems = await geminiService.parseItemsFromText(text);
       
-      return geminiItems.map(item => ({
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || 1,
-        category: recommendCategory(item.name || 'Unknown Item'),
-        completed: false
-      }));
+      const itemsWithCategories = await Promise.all(
+        geminiItems.map(async item => ({
+          name: item.name || 'Unknown Item',
+          quantity: item.quantity || 1,
+          category: await recommendCategoryAsync(item.name || 'Unknown Item').catch(() => 'general'),
+          completed: false
+        }))
+      );
+      return itemsWithCategories;
     } catch (error) {
       console.error('Gemini parsing failed:', error);
       return [];
@@ -103,13 +100,15 @@ const SeeMyPicture = ({ listId, onClose }: SeeMyPictureProps) => {
         return;
       }
 
-      // Add all items to the shopping list in batch
-      const itemsToAdd = extractedItems.map(item => ({
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || 1,
-        category: recommendCategory(item.name || 'Unknown Item'),
-        completed: false
-      }));
+      // Add all items to the shopping list in batch with async category classification
+      const itemsToAdd = await Promise.all(
+        extractedItems.map(async item => ({
+          name: item.name || 'Unknown Item',
+          quantity: item.quantity || 1,
+          category: await recommendCategoryAsync(item.name || 'Unknown Item').catch(() => 'general'),
+          completed: false
+        }))
+      );
       
       await addItems(listId, itemsToAdd);
 

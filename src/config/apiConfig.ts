@@ -5,22 +5,18 @@ import { CURRENT_ENV, envLog } from './envConfig';
 // Environment-specific API endpoints
 const API_ENDPOINTS = {
   development: {
-    geminiApi: 'https://generativelanguage.googleapis.com',
     openaiApi: 'https://api.openai.com',
   },
   production: {
-    geminiApi: 'https://generativelanguage.googleapis.com',
     openaiApi: 'https://api.openai.com',
   }
 };
 
 export const API_CONFIG = {
   // API Keys
-  GEMINI_API_KEY: SECURE_CONFIG.API_KEYS.GEMINI,
   OPENAI_API_KEY: SECURE_CONFIG.API_KEYS.OPENAI,
   
   // API Models
-  GEMINI_MODEL: SECURE_CONFIG.API_MODELS.GEMINI_MODEL,
   WHISPER_MODEL: SECURE_CONFIG.API_MODELS.WHISPER_MODEL,
    
   // API Endpoints based on environment

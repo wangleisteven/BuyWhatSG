@@ -3,7 +3,7 @@ import { FiX, FiMic, FiMicOff, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
-import { recommendCategory } from '../../utils/categoryClassifier';
+import { recommendCategoryAsync } from '../../utils/categoryClassifier';
 import WhisperService from '../../services/whisperService';
 import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';
@@ -51,26 +51,27 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
 
   // Parse transcribed text to identify items with quantities using Gemini AI
   const parseItemsFromText = async (text: string): Promise<ExtractedItem[]> => {
-    // Try Gemini API first if configured
-    if (API_CONFIG.GEMINI_API_KEY) {
-      try {
-        const geminiService = new GeminiService(API_CONFIG.GEMINI_API_KEY);
+    // Try Gemini API first
+    try {
+        const geminiService = new GeminiService();
         const geminiItems = await geminiService.parseItemsFromText(text);
         
-        // Convert Gemini items to ExtractedItem format
-        return geminiItems.map(item => ({
-          name: item.name,
-          quantity: item.quantity || 1,
-          category: recommendCategory(item.name)
-        }));
-      } catch (error) {
-        addToast({
-          message: 'Oops! Failed to recognize items, please try again later.',
-          type: 'warning'
-        });
-      }
+        // Convert Gemini items to ExtractedItem format with async category classification
+        const itemsWithCategories = await Promise.all(
+          geminiItems.map(async item => ({
+            name: item.name,
+            quantity: item.quantity || 1,
+            category: await recommendCategoryAsync(item.name).catch(() => 'general')
+          }))
+        );
+        return itemsWithCategories;
+    } catch (error) {
+      addToast({
+        message: 'Oops! Failed to recognize items, please try again later.',
+        type: 'warning'
+      });
+      return [];
     }
-    return [];
   };
 
   // Audio level analysis for sound wave visualization
@@ -361,13 +362,15 @@ const ListenToMe = ({ listId, onClose }: ListenToMeProps) => {
         return;
       }
 
-      // Add all items to the list in batch
-      const itemsToAdd = extractedItems.map(item => ({
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || 1,
-        category: recommendCategory(item.name || 'Unknown Item'),
-        completed: false
-      }));
+      // Add all items to the list in batch with async category classification
+      const itemsToAdd = await Promise.all(
+        extractedItems.map(async item => ({
+          name: item.name || 'Unknown Item',
+          quantity: item.quantity || 1,
+          category: await recommendCategoryAsync(item.name || 'Unknown Item').catch(() => 'general'),
+          completed: false
+        }))
+      );
       
       await addItems(listId, itemsToAdd);
 

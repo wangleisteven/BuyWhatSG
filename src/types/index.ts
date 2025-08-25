@@ -22,6 +22,7 @@ export type ShoppingList = {
   updatedAt: number;
   archived?: boolean;
   deleted?: boolean; // Soft deletion flag
+  firestoreId?: string; // ID of the document in Firestore, may be different from local id
 };
 
 // Toast Notification Types
