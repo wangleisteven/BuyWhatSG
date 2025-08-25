@@ -79,16 +79,31 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
         continue;
       }
       
-      // Get items for this list
-      const itemsQuery = query(
+      // Get items for this list - check both Firestore document ID and original list ID
+      const itemsQuery1 = query(
         collection(db, ITEMS_COLLECTION),
         where('listId', '==', listDoc.id),
-        where('userId', '==', userId),
-        orderBy('position', 'asc')
+        where('userId', '==', userId)
       );
       
-      const itemsSnapshot = await getDocs(itemsQuery);
-      const items: ShoppingItem[] = itemsSnapshot.docs
+      // Also query for items that might have the original list ID
+      const itemsQuery2 = listData.id && listData.id !== listDoc.id ? query(
+        collection(db, ITEMS_COLLECTION),
+        where('listId', '==', listData.id),
+        where('userId', '==', userId)
+      ) : null;
+      
+      const [itemsSnapshot1, itemsSnapshot2] = await Promise.all([
+        getDocs(itemsQuery1),
+        itemsQuery2 ? getDocs(itemsQuery2) : Promise.resolve({ docs: [] })
+      ]);
+      
+      // Combine results and remove duplicates
+      const allItemDocs = [...itemsSnapshot1.docs, ...itemsSnapshot2.docs];
+      const uniqueItemDocs = allItemDocs.filter((doc, index, self) => 
+        index === self.findIndex(d => d.id === doc.id)
+      );
+      const items: ShoppingItem[] = uniqueItemDocs
         .map(itemDoc => {
           const data = itemDoc.data();
           return {
@@ -97,7 +112,8 @@ export const getUserLists = async (userId: string): Promise<ShoppingList[]> => {
             firestoreId: itemDoc.id // Always store the Firestore document ID
           } as ShoppingItem;
         })
-        .filter(item => item.deleted !== true); // Filter out deleted items
+        .filter(item => item.deleted !== true) // Filter out deleted items
+        .sort((a, b) => (a.position || 0) - (b.position || 0)); // Sort by position
       
       lists.push({
         ...listData,
