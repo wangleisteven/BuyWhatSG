@@ -3,7 +3,7 @@ import { FiX, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
-import { recommendCategory } from '../../utils/categoryRecommendation';
+import { recommendCategory } from '../../utils/categoryClassifier';
 import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';
 import './ReadMyMessage.css';

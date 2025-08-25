@@ -3,7 +3,7 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { compressImage, isImageFile } from '../../utils';
-import { recommendCategory } from '../../utils/categoryRecommendation';
+import { recommendCategory } from '../../utils/categoryClassifier';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
 import './Items.css';

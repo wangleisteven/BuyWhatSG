@@ -3,7 +3,7 @@ import { FiX, FiMic, FiMicOff, FiLock } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import { useToast } from '../../context/NotificationSystemContext';
 import { useAuth } from '../../context/AuthContext';
-import { recommendCategory } from '../../utils/categoryRecommendation';
+import { recommendCategory } from '../../utils/categoryClassifier';
 import WhisperService from '../../services/whisperService';
 import GeminiService from '../../services/geminiService';
 import { API_CONFIG } from '../../config/apiConfig';

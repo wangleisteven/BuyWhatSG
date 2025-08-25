@@ -4,7 +4,7 @@ import { FiX, FiCamera } from 'react-icons/fi';
 import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types';
 import { compressImage, isImageFile } from '../../utils';
-import { recommendCategory } from '../../utils/categoryRecommendation';
+import { recommendCategory } from '../../utils/categoryClassifier';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
