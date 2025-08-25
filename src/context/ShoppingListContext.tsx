@@ -871,37 +871,33 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       if (isAuthenticated && user && currentItem) {
         queueOperation(async () => {
           try {
-            // Pass the firestoreId in the updates object for proper handling
-            const updatesWithFirestoreId = { ...updatesWithTimestamp, firestoreId: currentItem?.firestoreId };
-            try {
+            // Check if the item has a firestoreId
+            if (currentItem.firestoreId) {
+              // Item exists in Firestore, update it
+              const updatesWithFirestoreId = { ...updatesWithTimestamp, firestoreId: currentItem.firestoreId };
               await updateItemInFirestore(itemId, updatesWithFirestoreId, user.id);
-            } catch (updateError: any) {
-              // If the error is because the document doesn't exist, save as a new item instead
-              if (updateError.code === 'not-found' || updateError.code === 'NOT_FOUND' || updateError.message?.includes('No document to update')) {
-                const updatedItem: ShoppingItem = { ...currentItem!, ...updatesWithTimestamp };
-                const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
-                  
-                // Update the local item with the Firestore ID
-                setLists(prevLists =>
-                  prevLists.map(list => {
-                    if (list.id === listId) {
-                      return {
-                        ...list,
-                        items: list.items.map(item =>
-                          item.id === itemId
-                            ? { ...item, firestoreId }
-                            : item
-                        )
-                      };
-                    }
-                    return list;
-                  })
-                );
-              } else {
-                // Re-throw if it's not a document not found error
-                console.error('Error handling item update:', updateError);
-                throw updateError;
-              }
+            } else {
+              // Item doesn't exist in Firestore yet, save it as a new item
+              console.log(`Item ${itemId} doesn't have firestoreId, saving as new item to Firestore`);
+              const updatedItem: ShoppingItem = { ...currentItem, ...updatesWithTimestamp };
+              const firestoreId = await saveItemToFirestore(updatedItem, listId, user.id);
+                
+              // Update the local item with the Firestore ID
+              setLists(prevLists =>
+                prevLists.map(list => {
+                  if (list.id === listId) {
+                    return {
+                      ...list,
+                      items: list.items.map(item =>
+                        item.id === itemId
+                          ? { ...item, firestoreId }
+                          : item
+                      )
+                    };
+                  }
+                  return list;
+                })
+              );
             }
           } catch (error) {
             console.error('Error in updateItem operation:', error);
@@ -951,8 +947,12 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       if (isAuthenticated && user) {
         queueOperation(async () => {
           try {
-            // Pass both the local ID and Firestore ID to the function
-            await deleteItemFromFirestore(itemId, user.id, deletedItem?.firestoreId);
+            // Only attempt to delete from Firestore if the item has a firestoreId
+            if (deletedItem?.firestoreId) {
+              await deleteItemFromFirestore(itemId, user.id, deletedItem.firestoreId);
+            } else {
+              console.log(`Item ${itemId} doesn't have firestoreId, skipping Firestore deletion (item was never saved to Firestore)`);
+            }
           } catch (error: any) {
             // If the document doesn't exist, that's fine - it's already deleted
             if (error.code === 'not-found' || error.code === 'NOT_FOUND' || error.message?.includes('No document to update')) {
