@@ -919,17 +919,28 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       if (isAuthenticated && user) {
         queueOperation(async () => {
           try {
+            // Get the most current item state from the updated lists to ensure we have the latest firestoreId
+            let mostCurrentItem = currentItem;
+            setLists(prevLists => {
+              const list = prevLists.find(l => l.id === listId);
+              const item = list?.items.find(i => i.id === itemId);
+              if (item) {
+                mostCurrentItem = item;
+              }
+              return prevLists; // No state change, just reading
+            });
+            
             // Create updated item with all required properties
             const updatedItem: ShoppingItem = {
-              ...currentItem,
+              ...mostCurrentItem,
               ...updatesWithTimestamp
             };
             
             // Use saveOrUpdateItemInFirestore which handles both new and existing items
-            const firestoreId = await saveOrUpdateItemInFirestore(updatedItem, listId, user.id, currentItem.firestoreId);
+            const firestoreId = await saveOrUpdateItemInFirestore(updatedItem, listId, user.id, mostCurrentItem.firestoreId);
               
             // Update the local item with the Firestore ID if it changed
-            if (firestoreId !== currentItem.firestoreId) {
+            if (firestoreId !== mostCurrentItem.firestoreId) {
               setLists(prevLists =>
                 prevLists.map(list => {
                   if (list.id === listId) {
