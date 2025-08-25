@@ -784,46 +784,90 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-      // Update local state immediately for responsive UI
-      setLists(prevLists => {
-        const updatedLists = prevLists.map(list => {
-          if (list.id === listId) {
-            const updatedList = {
-              ...list,
-              items: [newItem, ...list.items],
-              updatedAt: Date.now()
-            };
-            
-            return updatedList;
-          }
-          return list;
-        });
-        return updatedLists;
-      });
-      
-      // Queue Firebase operation if authenticated
+      // If authenticated, save to Firestore immediately to get the firestoreId
       if (isAuthenticated && user) {
-        queueOperation(async () => {
+        try {
           const firestoreId = await saveOrUpdateItemInFirestore(newItem, listId, user.id);
           
-          // Update the local item with the Firestore ID
-          if (firestoreId) {
-            setLists(prevLists =>
-                    prevLists.map(list => {
-                if (list.id === listId) {
-                  return {
-                    ...list,
-                    items: list.items.map(item =>
-                      item.id === newItem.id
-                        ? { ...item, firestoreId }
-                        : item
-                    )
-                  };
-                }
-                return list;
-              })
-            );
-          }
+          // Update the item with the firestoreId before adding to local state
+          const itemWithFirestoreId = { ...newItem, firestoreId };
+          
+          // Update local state with the item that has firestoreId
+          setLists(prevLists => {
+            const updatedLists = prevLists.map(list => {
+              if (list.id === listId) {
+                const updatedList = {
+                  ...list,
+                  items: [itemWithFirestoreId, ...list.items],
+                  updatedAt: Date.now()
+                };
+                
+                return updatedList;
+              }
+              return list;
+            });
+            return updatedLists;
+          });
+        } catch (error) {
+          console.error('Error saving item to Firestore:', error);
+          
+          // If Firestore save fails, still add to local state without firestoreId
+          setLists(prevLists => {
+            const updatedLists = prevLists.map(list => {
+              if (list.id === listId) {
+                const updatedList = {
+                  ...list,
+                  items: [newItem, ...list.items],
+                  updatedAt: Date.now()
+                };
+                
+                return updatedList;
+              }
+              return list;
+            });
+            return updatedLists;
+          });
+          
+          // Queue the operation for retry
+          queueOperation(async () => {
+            const firestoreId = await saveOrUpdateItemInFirestore(newItem, listId, user.id);
+            
+            // Update the local item with the Firestore ID
+            if (firestoreId) {
+              setLists(prevLists =>
+                      prevLists.map(list => {
+                  if (list.id === listId) {
+                    return {
+                      ...list,
+                      items: list.items.map(item =>
+                        item.id === newItem.id
+                          ? { ...item, firestoreId }
+                          : item
+                      )
+                    };
+                  }
+                  return list;
+                })
+              );
+            }
+          });
+        }
+      } else {
+        // Not authenticated, just add to local state
+        setLists(prevLists => {
+          const updatedLists = prevLists.map(list => {
+            if (list.id === listId) {
+              const updatedList = {
+                ...list,
+                items: [newItem, ...list.items],
+                updatedAt: Date.now()
+              };
+              
+              return updatedList;
+            }
+            return list;
+          });
+          return updatedLists;
         });
       }
     } catch (error) {
