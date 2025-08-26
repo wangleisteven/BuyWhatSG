@@ -19,6 +19,11 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
+    // Allow authenticated users to read and write category cache
+    match /categoryCache/{itemName} {
+      allow read, write: if request.auth != null;
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
