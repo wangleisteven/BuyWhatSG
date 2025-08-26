@@ -273,29 +273,70 @@ export const showOpenInAppPrompt = async (addToast?: (toast: { variant: 'success
       
       // Set a flag to detect if redirection worked
       let redirectWorked = false;
+      let timeoutId: NodeJS.Timeout;
       
-      // Try the protocol handler approach
-      const redirectTimeout = setTimeout(() => {
-        if (!redirectWorked) {
-          // Protocol handler didn't work, mark as failed for today
-          localStorage.setItem('pwa-redirect-failed-date', today);
-          console.log('PWA protocol handler failed, will not retry today');
-        }
-      }, 2000);
+      // Clean up function
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener('blur', handleBlur);
+      };
       
       // Listen for page visibility change to detect if app opened
       const handleVisibilityChange = () => {
-        if (document.hidden) {
+        if (document.hidden && !redirectWorked) {
+          // Page became hidden, likely due to app opening
           redirectWorked = true;
-          clearTimeout(redirectTimeout);
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          cleanup();
+          console.log('PWA appears to have opened successfully');
         }
       };
       
+      // Listen for window blur as additional detection
+      const handleBlur = () => {
+        if (!redirectWorked) {
+          // Window lost focus, might indicate app opening
+          setTimeout(() => {
+            // Check if we're still blurred after a short delay
+            if (document.hidden || !document.hasFocus()) {
+              redirectWorked = true;
+              cleanup();
+              console.log('PWA appears to have opened successfully (blur detection)');
+            }
+          }, 100);
+        }
+      };
+      
+      // Set up event listeners
       document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('blur', handleBlur);
+      
+      // Set timeout to mark as failed if no successful detection
+      timeoutId = setTimeout(() => {
+        if (!redirectWorked) {
+          cleanup();
+          localStorage.setItem('pwa-redirect-failed-date', today);
+          console.log('PWA protocol handler failed, will not retry today');
+          
+          // Show fallback toast if available
+          if (addToast) {
+            addToast({
+              variant: 'info',
+              message: 'Unable to open the app. Please use the app icon on your home screen.',
+              duration: 4000
+            });
+          }
+        }
+      }, 3000); // Increased timeout to 3 seconds
       
       // Try to open with protocol handler
-      window.location.href = protocolUrl;
+      try {
+        window.location.href = protocolUrl;
+      } catch (error) {
+        // If the protocol handler fails immediately
+        cleanup();
+        throw error;
+      }
       
     } catch (error) {
       console.log('Could not redirect to PWA:', error);
