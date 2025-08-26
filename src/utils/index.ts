@@ -241,36 +241,42 @@ export const showOpenInAppPrompt = async (addToast?: (toast: { variant: 'success
   if (isPWAInstalled && isRunningInBrowser) {
     // Automatically redirect to PWA without confirmation
     try {
-      // Get the manifest to use the proper start_url
-      const manifestResponse = await fetch('/manifest.json');
-      const manifest = await manifestResponse.json();
-      const startUrl = manifest.start_url || '/';
-      
-      // Create the proper app URL using the manifest start_url
-      const baseUrl = window.location.origin;
+      // Get current path to preserve navigation state
       const currentPath = window.location.pathname + window.location.search + window.location.hash;
       
       // For iOS Safari, we can't directly launch the PWA
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-          // Show a toast notification if available, otherwise log to console
-          if (addToast) {
-            addToast({
-              variant: 'info',
-              message: 'Please use the BuyWhatSG app icon on your home screen for the best experience.',
-              duration: 5000
-            });
-          } else {
-            console.log('PWA detected on iOS - user should use home screen app icon');
-          }
-          return;
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        // Show a toast notification if available, otherwise log to console
+        if (addToast) {
+          addToast({
+            variant: 'info',
+            message: 'Please use the BuyWhatSG app icon on your home screen for the best experience.',
+            duration: 5000
+          });
+        } else {
+          console.log('PWA detected on iOS - user should use home screen app icon');
         }
+        return;
+      }
       
-      // For other platforms, redirect to the PWA using the proper URL scheme
-      // Try using the current path with the app's origin
-      const appUrl = `${baseUrl}${currentPath}`;
+      // For other platforms, try to use the custom protocol handler first
+      const protocolUrl = `web+buywhatsg:${currentPath}`;
       
-      // Use location.replace to avoid adding to browser history
-      window.location.replace(appUrl);
+      // Try the protocol handler approach
+      try {
+        window.location.href = protocolUrl;
+        // Give it a moment to work, then fallback if needed
+        setTimeout(() => {
+          // If we're still here after 1 second, the protocol didn't work
+          // Fallback to direct URL replacement
+          const fallbackUrl = `${window.location.origin}${currentPath}`;
+          window.location.replace(fallbackUrl);
+        }, 1000);
+      } catch (protocolError) {
+        // Protocol handler failed, use direct URL replacement
+        const fallbackUrl = `${window.location.origin}${currentPath}`;
+        window.location.replace(fallbackUrl);
+      }
       
     } catch (error) {
       console.log('Could not redirect to PWA, continuing with web version:', error);
