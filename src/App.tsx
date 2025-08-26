@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppProvider';
+import { PWAProvider } from './context/PWAContext';
 import Layout from './components/layout/Layout';
 import ListsPage from './components/lists/ListsPage';
 import ListDetail from './components/lists/ListDetail';
@@ -36,9 +37,10 @@ function App() {
   };
 
   return (
-    <AppProvider>
-      <Router>
-        <Layout>
+    <Router>
+      <AppProvider>
+        <PWAProvider>
+          <Layout>
           <Routes>
             <Route path="/" element={<Navigate to="/lists" replace />} />
             <Route path="/lists" element={<ListsPage />} />
@@ -46,15 +48,15 @@ function App() {
             <Route path="/me" element={<MePage />} />
             <Route path="*" element={<Navigate to="/lists" replace />} />
           </Routes>
-        </Layout>
-        <NotificationWrapper />
-        <OnboardingModal 
-          isOpen={showOnboarding} 
-          onClose={handleCloseOnboarding} 
-        />
-
-      </Router>
-    </AppProvider>
+          </Layout>
+          <NotificationWrapper />
+          <OnboardingModal 
+            isOpen={showOnboarding} 
+            onClose={handleCloseOnboarding} 
+          />
+        </PWAProvider>
+      </AppProvider>
+    </Router>
   )
 }
 
