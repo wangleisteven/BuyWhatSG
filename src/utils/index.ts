@@ -233,35 +233,47 @@ export const markPWAAsInstalled = () => {
   localStorage.setItem('pwa-installed', 'true');
 };
 
-export const showOpenInAppPrompt = () => {
+export const showOpenInAppPrompt = async (addToast?: (toast: { variant: string; message: string; duration: number }) => void) => {
   // Check if PWA is installed and we're running in browser
   const isPWAInstalled = localStorage.getItem('pwa-installed') === 'true';
   const isRunningInBrowser = !isStandalone();
   
   if (isPWAInstalled && isRunningInBrowser) {
-    // Show prompt to open in installed app
-    const shouldRedirect = confirm(
-      'BuyWhatSG is already installed on your device. Would you like to open it in the app instead?'
-    );
-    
-    if (shouldRedirect) {
-      // Try to open the PWA using the app protocol
-      const appUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    // Automatically redirect to PWA without confirmation
+    try {
+      // Get the manifest to use the proper start_url
+      const manifestResponse = await fetch('/manifest.json');
+      const manifest = await manifestResponse.json();
+      const startUrl = manifest.start_url || '/';
       
-      // For iOS Safari, try to open using the web app URL
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        // On iOS, we can't directly launch the PWA, but we can provide instructions
-        alert('Please use the BuyWhatSG app icon on your home screen to open the app.');
-        return;
-      }
+      // Create the proper app URL using the manifest start_url
+      const baseUrl = window.location.origin;
+      const currentPath = window.location.pathname + window.location.search + window.location.hash;
       
-      // For other platforms, try to redirect to the PWA
-      try {
-        // Create a custom URL scheme or use the manifest start_url
-        window.location.href = appUrl;
-      } catch (error) {
-        console.log('Could not redirect to PWA, continuing with web version');
-      }
+      // For iOS Safari, we can't directly launch the PWA
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+          // Show a toast notification if available, otherwise log to console
+          if (addToast) {
+            addToast({
+              variant: 'info',
+              message: 'Please use the BuyWhatSG app icon on your home screen for the best experience.',
+              duration: 5000
+            });
+          } else {
+            console.log('PWA detected on iOS - user should use home screen app icon');
+          }
+          return;
+        }
+      
+      // For other platforms, redirect to the PWA using the proper URL scheme
+      // Try using the current path with the app's origin
+      const appUrl = `${baseUrl}${currentPath}`;
+      
+      // Use location.replace to avoid adding to browser history
+      window.location.replace(appUrl);
+      
+    } catch (error) {
+      console.log('Could not redirect to PWA, continuing with web version:', error);
     }
   }
 };
