@@ -5,6 +5,7 @@ import {
   addDoc, 
   updateDoc, 
   setDoc, 
+  getDoc,
   query, 
   where, 
   orderBy, 
@@ -17,6 +18,7 @@ import type { ShoppingList, ShoppingItem } from '../types';
 // Collection names
 const LISTS_COLLECTION = 'shoppingLists';
 const ITEMS_COLLECTION = 'shoppingItems';
+const CATEGORY_CACHE_COLLECTION = 'categoryCache';
 
 // Convert Firestore timestamp to number
 const timestampToNumber = (timestamp: any): number => {
@@ -555,5 +557,39 @@ export const syncLocalListsToFirestore = async (localLists: ShoppingList[], user
   } catch (error) {
     console.error('❌ syncLocalListsToFirestore: Error syncing local lists to Firestore:', error);
     throw error;
+  }
+};
+
+// Category caching functions
+export const getCachedCategory = async (itemName: string): Promise<string | null> => {
+  try {
+    const normalizedName = itemName.toLowerCase().trim();
+    const docRef = doc(db, CATEGORY_CACHE_COLLECTION, normalizedName);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return data.category;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting cached category:', error);
+    return null;
+  }
+};
+
+export const setCachedCategory = async (itemName: string, category: string): Promise<void> => {
+  try {
+    const normalizedName = itemName.toLowerCase().trim();
+    const docRef = doc(db, CATEGORY_CACHE_COLLECTION, normalizedName);
+    await setDoc(docRef, {
+      itemName: normalizedName,
+      category,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error caching category:', error);
+    // Don't throw error as caching is not critical
   }
 };

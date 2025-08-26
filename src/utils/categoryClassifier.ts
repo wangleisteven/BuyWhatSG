@@ -4,6 +4,7 @@
  */
 
 import GeminiService from '../services/geminiService';
+import { getCachedCategory, setCachedCategory } from '../services/firestore';
 
 interface ClassificationResult {
   category: string;
@@ -67,8 +68,28 @@ export function recommendCategory(itemName: string): string {
  * Async version of recommendCategory for better UX
  */
 export async function recommendCategoryAsync(itemName: string): Promise<string> {
-  const result = await classifyItemCategory(itemName);
-  return result.category;
+  if (!itemName || itemName.trim().length === 0) {
+    return 'general';
+  }
+
+  try {
+    // Check cache first
+    const cachedCategory = await getCachedCategory(itemName);
+    if (cachedCategory) {
+      return cachedCategory;
+    }
+
+    // If not in cache, call AI API
+    const result = await classifyItemCategory(itemName);
+    
+    // Cache the result for future use
+    await setCachedCategory(itemName, result.category);
+    
+    return result.category;
+  } catch (error) {
+    console.error('Error in recommendCategoryAsync:', error);
+    return 'general';
+  }
 }
 
 /**

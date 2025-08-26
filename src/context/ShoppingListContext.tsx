@@ -32,6 +32,7 @@ type ShoppingListContextType = {
   deleteItem: (listId: string, itemId: string) => Promise<void>;
   toggleItemCompletion: (listId: string, itemId: string) => Promise<void>;
   reorderItems: (listId: string, startIndex: number, endIndex: number) => Promise<void>;
+  clearLists: () => void;
 };
 
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined);
@@ -776,6 +777,20 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
 
   // Add an item to a shopping list
   const addItem = async (listId: string, item: Omit<ShoppingItem, 'id' | 'position'>) => {
+    // Check if user is not authenticated and already has 10 items in the list
+    if (!isAuthenticated) {
+      const currentList = lists.find(list => list.id === listId);
+      if (currentList && currentList.items.length >= 10) {
+        showAlert({
+          type: 'info',
+          title: 'Item Limit Reached',
+          message: 'Please log in to add more than 10 items to a list',
+          cancelText: 'OK'
+        });
+        return;
+      }
+    }
+
     const newItem: ShoppingItem = {
       ...item,
       id: generateId(),
@@ -1148,7 +1163,23 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Clear all lists (used when user signs out)
+  const clearLists = () => {
+    setLists([createEducationList()]);
+    setCurrentList(null);
+  };
 
+  // Listen for user sign out event
+  useEffect(() => {
+    const handleUserSignOut = () => {
+      clearLists();
+    };
+
+    window.addEventListener('userSignOut', handleUserSignOut);
+    return () => {
+      window.removeEventListener('userSignOut', handleUserSignOut);
+    };
+  }, []);
 
   return (
     <ShoppingListContext.Provider
@@ -1168,7 +1199,7 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
         deleteItem,
         toggleItemCompletion,
         reorderItems,
-
+        clearLists,
       }}
     >
       {children}

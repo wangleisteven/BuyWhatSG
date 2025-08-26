@@ -108,6 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       await signOut(auth);
+      // Dispatch custom event to clear shopping lists
+      window.dispatchEvent(new CustomEvent('userSignOut'));
       // User is set to null by the auth state listener
     } catch (error) {
       console.error('Error signing out:', error);
