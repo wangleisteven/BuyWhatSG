@@ -233,7 +233,7 @@ export const markPWAAsInstalled = () => {
   localStorage.setItem('pwa-installed', 'true');
 };
 
-export const showOpenInAppPrompt = async (addToast?: (toast: { variant: string; message: string; duration: number }) => void) => {
+export const showOpenInAppPrompt = async (addToast?: (toast: { variant: 'success' | 'error' | 'warning' | 'info'; message: string; duration?: number; title?: string; action?: string; onAction?: () => void; isModal?: boolean; confirmText?: string; cancelText?: string; onConfirm?: () => void; onCancel?: () => void; }) => string) => {
   // Check if PWA is installed and we're running in browser
   const isPWAInstalled = localStorage.getItem('pwa-installed') === 'true';
   const isRunningInBrowser = !isStandalone();
