@@ -193,7 +193,36 @@ export const handleDeepLink = (url: string): { route: string; params?: Record<st
     const pathname = urlObj.pathname;
     const searchParams = Object.fromEntries(urlObj.searchParams.entries());
     
-    // Handle different deep link patterns
+    // Handle protocol handler requests (/?handler=encodedPath)
+    if (pathname === '/' && searchParams.handler) {
+      try {
+        const decodedPath = decodeURIComponent(searchParams.handler);
+        console.log('🔗 Protocol handler received:', searchParams.handler, '-> decoded:', decodedPath);
+        
+        // Parse the decoded path
+        const decodedUrl = new URL(decodedPath, window.location.origin);
+        const decodedPathname = decodedUrl.pathname;
+        const decodedSearchParams = Object.fromEntries(decodedUrl.searchParams.entries());
+        
+        // Handle different deep link patterns from decoded path
+        if (decodedPathname.startsWith('/list/')) {
+          const listId = decodedPathname.split('/list/')[1];
+          return { route: `/list/${listId}`, params: { listId, ...decodedSearchParams } };
+        }
+        
+        if (decodedPathname === '/me') {
+          return { route: '/me', params: decodedSearchParams };
+        }
+        
+        // Return the decoded path
+        return { route: decodedPathname || '/', params: decodedSearchParams };
+      } catch (decodeError) {
+        console.error('Failed to decode protocol handler path:', decodeError);
+        // Fall through to normal handling
+      }
+    }
+    
+    // Handle normal deep link patterns
     if (pathname.startsWith('/list/')) {
       const listId = pathname.split('/list/')[1];
       return { route: `/list/${listId}`, params: { listId, ...searchParams } };
@@ -231,11 +260,4 @@ export const registerUrlHandler = () => {
 
 export const markPWAAsInstalled = () => {
   localStorage.setItem('pwa-installed', 'true');
-};
-
-// Legacy function - now replaced by manual openApp in PWAContext
-// Keeping for backward compatibility but functionality moved to PWAContext.openApp
-export const showOpenInAppPrompt = async (addToast?: (toast: { variant: 'success' | 'error' | 'warning' | 'info'; message: string; duration?: number; title?: string; action?: string; onAction?: () => void; isModal?: boolean; confirmText?: string; cancelText?: string; onConfirm?: () => void; onCancel?: () => void; }) => string) => {
-  console.log('⚠️ showOpenInAppPrompt called - this function is deprecated. Use PWAContext.openApp instead.');
-  // Function is now deprecated - all PWA opening logic moved to manual trigger in PWAContext
 };

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { isStandalone, updateManifestForCurrentDomain } from '../utils';
 import { handleDeepLink, registerUrlHandler, markPWAAsInstalled } from '../utils';
 import { useNotificationSystem } from './NotificationSystemContext';
@@ -37,6 +38,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
   const [isPWA, setIsPWA] = useState(isStandalone());
   const [isPWAInstalled, setIsPWAInstalled] = useState(localStorage.getItem('pwa-installed') === 'true');
   const { addToast } = useNotificationSystem();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Update manifest for current domain (localhost vs ngrok)
@@ -76,7 +78,14 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     }
 
     // Initialize deep linking
-    handleDeepLink(window.location.href);
+    const deepLinkResult = handleDeepLink(window.location.href);
+    
+    // Navigate to the deep link route if it's different from current location
+    if (deepLinkResult.route && deepLinkResult.route !== window.location.pathname) {
+      console.log('🔗 Navigating to deep link route:', deepLinkResult.route);
+      navigate(deepLinkResult.route, { replace: true });
+    }
+    
     registerUrlHandler();
     
 
@@ -144,7 +153,10 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     try {
       // Get current path to preserve navigation state
       const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      const protocolUrl = `web+buywhatsg://${currentPath.startsWith('/') ? currentPath.slice(1) : currentPath}`;
+      // The manifest.json protocol handler expects: web+buywhatsg://path -> /?handler=path
+      // So we need to encode the current path as the protocol parameter
+      const encodedPath = encodeURIComponent(currentPath);
+      const protocolUrl = `web+buywhatsg://${encodedPath}`;
       
       console.log('🔗 Attempting to open with protocol:', protocolUrl);
       
