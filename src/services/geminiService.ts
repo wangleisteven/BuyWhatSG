@@ -93,19 +93,20 @@ Rules:
     }
 
     // Get category names for the prompt
-    const categoryNames = categories.map(cat => cat.name).join(', ');
+    const categoryNames = categories.map(cat => cat.name).join('\n').replace('General\n', '');
     
     const prompt = `
 Classify the following item into one of these categories:
 
-Available categories: ${categoryNames}
+Available categories: 
+${categoryNames}
 
 Item to classify: "${itemName.trim()}"
 
 Rules:
 1. Choose the most appropriate category from the list above
 2. If no category fits well, use "General"
-3. Consider the context of grocery/shopping items
+3. Consider the context of grocery/shopping items in different category section areas in a supermarket
 4. Return only a JSON response in this exact format:
 
 {
@@ -119,6 +120,7 @@ Where:
 `;
 
     try {
+      // console.log('Prompt:', prompt);
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const generatedText = response.text();

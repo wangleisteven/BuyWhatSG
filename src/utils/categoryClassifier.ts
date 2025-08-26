@@ -83,7 +83,9 @@ export async function recommendCategoryAsync(itemName: string): Promise<string> 
     const result = await classifyItemCategory(itemName);
     
     // Cache the result for future use
-    await setCachedCategory(itemName, result.category);
+    if (result.confidence >= 0.85) {
+      await setCachedCategory(itemName, result.category);
+    }
     
     return result.category;
   } catch (error) {

@@ -606,10 +606,26 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       if (isAuthenticated && user) {
-        // Save to Firebase
+        // Save list to Firebase
         const firebaseId = await saveListToFirestore(duplicatedList, user.id);
         const listWithFirebaseId = { ...duplicatedList, id: firebaseId };
-        setLists(prevLists => [...prevLists, listWithFirebaseId]);
+        
+        // Save all items to Firebase individually
+        const itemsWithFirestoreIds = await Promise.all(
+          duplicatedList.items.map(async (item) => {
+            try {
+              const itemFirestoreId = await saveItemToFirestore(item, firebaseId, user.id);
+              return { ...item, firestoreId: itemFirestoreId };
+            } catch (error) {
+              console.error('Error saving duplicated item to Firestore:', error);
+              return item; // Return item without firestoreId if save fails
+            }
+          })
+        );
+        
+        // Update the list with items that have Firestore IDs
+        const finalList = { ...listWithFirebaseId, items: itemsWithFirestoreIds };
+        setLists(prevLists => [...prevLists, finalList]);
       } else {
         // Save to local state
         setLists(prevLists => [...prevLists, duplicatedList]);
