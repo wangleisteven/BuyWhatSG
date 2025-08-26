@@ -45,7 +45,6 @@
       "purpose": "maskable"
     }
   ],
-  "orientation": "portrait",
   "categories": ["shopping", "productivity", "lifestyle"],
   "protocol_handlers": [
     {

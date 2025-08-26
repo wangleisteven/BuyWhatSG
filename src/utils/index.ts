@@ -238,48 +238,69 @@ export const showOpenInAppPrompt = async (addToast?: (toast: { variant: 'success
   const isPWAInstalled = localStorage.getItem('pwa-installed') === 'true';
   const isRunningInBrowser = !isStandalone();
   
+  // Check if we should skip retry today
+  const today = new Date().toDateString();
+  const lastFailedDate = localStorage.getItem('pwa-redirect-failed-date');
+  
+  if (lastFailedDate === today) {
+    // Already failed today, don't retry
+    return;
+  }
+  
   if (isPWAInstalled && isRunningInBrowser) {
-    // Automatically redirect to PWA without confirmation
+    // For iOS Safari, we can't directly launch the PWA
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      // Show a toast notification if available, otherwise log to console
+      if (addToast) {
+        addToast({
+          variant: 'info',
+          message: 'Please use the BuyWhatSG app icon on your home screen for the best experience.',
+          duration: 5000
+        });
+      } else {
+        console.log('PWA detected on iOS - user should use home screen app icon');
+      }
+      return;
+    }
+    
+    // For other platforms, try to redirect to PWA
     try {
       // Get current path to preserve navigation state
       const currentPath = window.location.pathname + window.location.search + window.location.hash;
       
-      // For iOS Safari, we can't directly launch the PWA
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        // Show a toast notification if available, otherwise log to console
-        if (addToast) {
-          addToast({
-            variant: 'info',
-            message: 'Please use the BuyWhatSG app icon on your home screen for the best experience.',
-            duration: 5000
-          });
-        } else {
-          console.log('PWA detected on iOS - user should use home screen app icon');
-        }
-        return;
-      }
+      // Try to use the custom protocol handler with proper format
+      const protocolUrl = `web+buywhatsg://${currentPath.startsWith('/') ? currentPath.slice(1) : currentPath}`;
       
-      // For other platforms, try to use the custom protocol handler first
-      const protocolUrl = `web+buywhatsg:${currentPath}`;
+      // Set a flag to detect if redirection worked
+      let redirectWorked = false;
       
       // Try the protocol handler approach
-      try {
-        window.location.href = protocolUrl;
-        // Give it a moment to work, then fallback if needed
-        setTimeout(() => {
-          // If we're still here after 1 second, the protocol didn't work
-          // Fallback to direct URL replacement
-          const fallbackUrl = `${window.location.origin}${currentPath}`;
-          window.location.replace(fallbackUrl);
-        }, 1000);
-      } catch (protocolError) {
-        // Protocol handler failed, use direct URL replacement
-        const fallbackUrl = `${window.location.origin}${currentPath}`;
-        window.location.replace(fallbackUrl);
-      }
+      const redirectTimeout = setTimeout(() => {
+        if (!redirectWorked) {
+          // Protocol handler didn't work, mark as failed for today
+          localStorage.setItem('pwa-redirect-failed-date', today);
+          console.log('PWA protocol handler failed, will not retry today');
+        }
+      }, 2000);
+      
+      // Listen for page visibility change to detect if app opened
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          redirectWorked = true;
+          clearTimeout(redirectTimeout);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Try to open with protocol handler
+      window.location.href = protocolUrl;
       
     } catch (error) {
-      console.log('Could not redirect to PWA, continuing with web version:', error);
+      console.log('Could not redirect to PWA:', error);
+      // Mark as failed for today
+      localStorage.setItem('pwa-redirect-failed-date', today);
     }
   }
 };

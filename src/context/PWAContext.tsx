@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { isStandalone, updateManifestForCurrentDomain } from '../utils';
 import { handleDeepLink, registerUrlHandler, markPWAAsInstalled, showOpenInAppPrompt } from '../utils';
+import { useNotificationSystem } from './NotificationSystemContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -32,6 +33,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [isPWA, setIsPWA] = useState(isStandalone());
+  const { addToast } = useNotificationSystem();
 
   useEffect(() => {
     // Update manifest for current domain (localhost vs ngrok)
@@ -52,6 +54,8 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
       setIsPWA(true);
       // Mark PWA as installed for deep linking
       markPWAAsInstalled();
+      // Show open in app prompt if PWA is installed but running in browser
+      showOpenInAppPrompt(addToast);
     };
 
     // Listen for the beforeinstallprompt event
@@ -68,14 +72,12 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     handleDeepLink(window.location.href);
     registerUrlHandler();
     
-    // Show open in app prompt if PWA is installed but running in browser
-    showOpenInAppPrompt();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [addToast]);
 
   const showInstallPrompt = async (): Promise<void> => {
     if (!deferredPrompt) {
