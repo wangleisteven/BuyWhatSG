@@ -214,8 +214,9 @@ export const handleDeepLink = (url: string): { route: string; params?: Record<st
           return { route: '/me', params: decodedSearchParams };
         }
         
-        // Return the decoded path
-        return { route: decodedPathname || '/', params: decodedSearchParams };
+        // Return the decoded path, defaulting to /lists if root
+        const finalRoute = decodedPathname === '/' ? '/lists' : (decodedPathname || '/lists');
+        return { route: finalRoute, params: decodedSearchParams };
       } catch (decodeError) {
         console.error('Failed to decode protocol handler path:', decodeError);
         // Fall through to normal handling
@@ -232,11 +233,11 @@ export const handleDeepLink = (url: string): { route: string; params?: Record<st
       return { route: '/me', params: searchParams };
     }
     
-    // Default to home
-    return { route: '/', params: searchParams };
+    // Default to lists page
+    return { route: '/lists', params: searchParams };
   } catch (error) {
     console.error('Failed to parse deep link:', error);
-    return { route: '/' };
+    return { route: '/lists' };
   }
 };
 

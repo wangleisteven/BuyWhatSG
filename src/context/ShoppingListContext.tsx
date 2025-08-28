@@ -591,41 +591,42 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    const { firestoreId: listFirestoreId, ...listWithoutFirestoreId } = listToDuplicate;
     const duplicatedList: ShoppingList = {
-      ...listToDuplicate,
+      ...listWithoutFirestoreId,
       id: generateId(),
       name: `${listToDuplicate.name} (Copy)`,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      items: listToDuplicate.items.map(item => ({
-        ...item,
-        id: generateId(),
-        completed: false
-      }))
+      items: listToDuplicate.items.map(item => {
+        const { firestoreId: itemFirestoreId, ...itemWithoutFirestoreId } = item;
+        return {
+          ...itemWithoutFirestoreId,
+          id: generateId(),
+          completed: false
+        };
+      })
     };
 
     try {
       if (isAuthenticated && user) {
-        // Save list to Firebase
+        // Save to Firebase using queue system
         const firebaseId = await saveListToFirestore(duplicatedList, user.id);
         const listWithFirebaseId = { ...duplicatedList, id: firebaseId };
+        setLists(prevLists => [...prevLists, listWithFirebaseId]);
         
-        // Save all items to Firebase individually
-        const itemsWithFirestoreIds = await Promise.all(
-          duplicatedList.items.map(async (item) => {
-            try {
-              const itemFirestoreId = await saveItemToFirestore(item, firebaseId, user.id);
-              return { ...item, firestoreId: itemFirestoreId };
-            } catch (error) {
-              console.error('Error saving duplicated item to Firestore:', error);
-              return item; // Return item without firestoreId if save fails
-            }
-          })
-        );
+        // Queue the operation to ensure the document's 'id' field matches the Firestore document ID
+        queueOperation(async () => {
+          try {
+            // Update the document to ensure its 'id' field matches the Firestore document ID
+            await updateListInFirestore(firebaseId, { id: firebaseId }, user.id);
+          } catch (error) {
+            console.error('Error updating list id field in Firestore:', error);
+            throw error;
+          }
+        });
         
-        // Update the list with items that have Firestore IDs
-        const finalList = { ...listWithFirebaseId, items: itemsWithFirestoreIds };
-        setLists(prevLists => [...prevLists, finalList]);
+        console.log('✅ duplicateList: Successfully duplicated list with Firestore ID:', firebaseId);
       } else {
         // Save to local state
         setLists(prevLists => [...prevLists, duplicatedList]);

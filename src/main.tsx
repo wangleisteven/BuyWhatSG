@@ -9,6 +9,19 @@ import { CURRENT_ENV, envLog } from './config/envConfig'
 // Log environment information
 envLog(`Application starting in ${CURRENT_ENV} environment`)
 
+// PWA Launch Queue Handler for URL routing
+if ('launchQueue' in window) {
+  (window as any).launchQueue.setConsumer((launchParams: any) => {
+    // Check if the launch was triggered by a URL
+    if (launchParams.targetURL) {
+      // Use the URL to navigate to the correct page in the PWA
+      const url = new URL(launchParams.targetURL);
+      // Navigate to the target URL within the PWA
+      window.location.href = url.pathname + url.search + url.hash;
+    }
+  });
+}
+
 // PWA update component
 const PWAUpdateWrapper = () => {
   const [needRefresh, setNeedRefresh] = useState(false);

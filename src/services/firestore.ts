@@ -28,9 +28,9 @@ const timestampToNumber = (timestamp: any): number => {
   return timestamp || Date.now();
 };
 
-// Convert ShoppingList for Firestore (remove items array)
+// Convert ShoppingList for Firestore (remove items array and firestoreId)
 const listToFirestore = (list: ShoppingList, userId: string) => {
-  const { items, ...listData } = list;
+  const { items, firestoreId, ...listData } = list;
   
   // Create a clean copy of the list data without undefined values
   const cleanListData = Object.fromEntries(
@@ -45,11 +45,12 @@ const listToFirestore = (list: ShoppingList, userId: string) => {
   };
 };
 
-// Convert ShoppingItem for Firestore
+// Convert ShoppingItem for Firestore (exclude firestoreId)
 const itemToFirestore = (item: ShoppingItem, listId: string, userId: string) => {
-  // Create a clean copy of the item without undefined values
+  // Exclude firestoreId and create a clean copy of the item without undefined values
+  const { firestoreId, ...itemWithoutFirestoreId } = item;
   const cleanItem = Object.fromEntries(
-    Object.entries(item).filter(([_, value]) => value !== undefined)
+    Object.entries(itemWithoutFirestoreId).filter(([_, value]) => value !== undefined)
   );
   
   const firestoreItem = {
