@@ -12,8 +12,7 @@ import {
   saveItemToFirestore,
   updateItemInFirestore,
   deleteItemFromFirestore,
-  saveOrUpdateItemInFirestore,
-  syncLocalListsToFirestore
+  saveOrUpdateItemInFirestore
 } from '../services/firestore';
 
 type ShoppingListContextType = {
@@ -78,6 +77,8 @@ const createEducationList = (): ShoppingList => {
   };
 };
 
+
+
 export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const { showAlert } = useAlert();
@@ -88,7 +89,8 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   
   // Initialize lists using our enhanced useLocalStorage hook with separate storage for authenticated and non-authenticated users
-  const [lists, setListsOriginal, { getGuestData, copyGuestDataToAuth }] = useLocalStorage<ShoppingList[]>(
+  // Always use education list as fallback, useLocalStorage will handle loading from storage
+  const [lists, setListsOriginal, { getGuestData }] = useLocalStorage<ShoppingList[]>(
     'shoppingLists',
     [createEducationList()],
     isAuthenticated,
@@ -119,6 +121,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
 
   const [_isLoadingData, setIsLoadingData] = useState(false);
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+  
+  // State to preserve guest lists during login/logout cycle
+  const [preservedGuestLists, setPreservedGuestLists] = useState<ShoppingList[] | null>(null);
   
   // No need to manually save to localStorage as our enhanced useLocalStorage hook handles this
   // This comment is kept for documentation purposes
@@ -282,7 +287,10 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (isAuthenticated && user && !hasLoadedInitialData) {
-        // User is logged in
+        // User is logged in - preserve current guest lists before switching to Firestore
+        const currentGuestLists = lists.filter(list => !list.firestoreId);
+        setPreservedGuestLists(currentGuestLists);
+        
         setIsLoadingData(true);
         try {
           // Load user's lists from Firebase to check if this is a first-time user
@@ -309,62 +317,26 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
           }
           
           if (isFirstTimeUser) {
-            // First-time user: sync non-login state lists to Firebase as initialization
-            const guestLists = getGuestData();
-            // First-time user: syncing guest lists to Firebase
+            // First-time user: start with fresh education list only
+            const educationList = createEducationList();
             
-            try {
-              // Copy guest data to authenticated storage
-              copyGuestDataToAuth();
-              // Sync all guest lists (including education list) to Firebase
-              await syncLocalListsToFirestore(guestLists, user.id);
-              // Successfully synced all guest lists to Firebase for first-time user
-              
-              // Set lists from guest data
-              // CRITICAL: Don't overwrite state if we have pending operations
-              if (pendingOperations.length === 0 && !isProcessingQueue) {
-                setLists(guestLists);
-              } else {
-                // SKIPPING guest data set - pending operations exist
-              }
-            } catch (syncError) {
-              // Error syncing guest lists to Firebase
-              // Even if Firebase sync fails, we still copied the data locally
-              // CRITICAL: Don't overwrite state if we have pending operations
-              if (pendingOperations.length === 0 && !isProcessingQueue) {
-                setLists(guestLists.length > 0 ? guestLists : [createEducationList()]);
-              } else {
-                // SKIPPING fallback set - pending operations exist
-              }
+            // CRITICAL: Don't overwrite state if we have pending operations
+            if (pendingOperations.length === 0 && !isProcessingQueue) {
+              setLists([educationList]);
+            } else {
+              // SKIPPING first-time user setup - pending operations exist
             }
           } else {
             // Returning user: merge Firebase lists with current local state to preserve pending changes
             // Returning user: loading lists from Firebase
             
-            // Merge Firebase data with current local state to preserve items being processed
-            setLists(prevLists => {
-              // If we have no local lists or they're just the education list, use Firebase data
-              if (prevLists.length === 0 || (prevLists.length === 1 && prevLists[0].id === 'education-list')) {
-                return firebaseLists;
-              }
-              
-              // Merge Firebase lists with local changes
-              const mergedLists = firebaseLists.map(firebaseList => {
-                const localList = prevLists.find(list => list.id === firebaseList.id);
-                if (localList && localList.updatedAt > firebaseList.updatedAt) {
-                  // Local list is newer, keep local version
-                  return localList;
-                }
-                return firebaseList;
-              });
-              
-              // Add any local lists that don't exist in Firebase yet
-              const localOnlyLists = prevLists.filter(localList => 
-                !firebaseLists.find(firebaseList => firebaseList.id === localList.id)
-              );
-              
-              return [...mergedLists, ...localOnlyLists];
-            });
+            // Returning user: only show Firestore lists, no localStorage merging
+            // CRITICAL: Don't overwrite state if we have pending operations
+            if (pendingOperations.length === 0 && !isProcessingQueue) {
+              setLists(firebaseLists);
+            } else {
+              // SKIPPING Firestore data load - pending operations exist
+            }
           }
           
           // Clear current list to refresh
@@ -387,18 +359,22 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
       } else if (!isAuthenticated && !loading) {
         // Reset the flag when user logs out
         setHasLoadedInitialData(false);
-        // User logged out - switch back to guest storage
+        // User logged out - restore only guest lists, clear any authenticated state
         setIsLoadingData(true);
         try {
-          // Get guest data from localStorage (preserved separately)
-          const guestLists = getGuestData();
+          // User logged out - restore guest lists
+          const guestLists = preservedGuestLists || getGuestData();
           
           // Ensure we have the education list
-          const educationList = guestLists.find(list => list.id === 'education-list') || createEducationList();
-          const otherGuestLists = guestLists.filter(list => list.id !== 'education-list');
+          const educationList = guestLists.find((list: any) => list.id === 'education-list') || createEducationList();
+          const otherGuestLists = guestLists.filter((list: any) => list.id !== 'education-list');
           
-          // Restore all guest lists (not just the first one)
-          const restoredLists = [educationList, ...otherGuestLists];
+          // Restore only guest lists (no firestoreId)
+          const restoredLists = [educationList, ...otherGuestLists.filter((list: any) => !list.firestoreId)];
+          
+          // Clear preserved guest lists
+          setPreservedGuestLists(null);
+          
           // CRITICAL: Don't overwrite state if we have pending operations
           if (pendingOperations.length === 0 && !isProcessingQueue) {
             setLists(restoredLists);
@@ -406,14 +382,15 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
             // SKIPPING logout restore - pending operations exist
           }
           
-          // Clear current list if it's not in the restored lists
-          if (currentList && !restoredLists.find(list => list.id === currentList.id)) {
+          // Clear current list if it's not in the restored lists or if it's an authenticated list
+          if (currentList && (!restoredLists.find((list: any) => list.id === currentList.id) || currentList.firestoreId)) {
             setCurrentList(null);
           }
           
           // Restored guest lists after logout
         } catch (error) {
-          // Error handling logout
+          console.error('Error handling logout:', error);
+          // Error handling logout - fallback to education list only
           // CRITICAL: Don't overwrite state if we have pending operations
           if (pendingOperations.length === 0 && !isProcessingQueue) {
             setLists([createEducationList()]);
@@ -1079,44 +1056,97 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
     const item = list?.items.find(i => i.id === itemId);
     if (!item) return;
 
-    // Check if the item has a Firestore ID
-    const updates = { completed: !item.completed };
-    await updateItem(listId, itemId, updates);
+    const newCompletedStatus = !item.completed;
+    const updatesWithTimestamp = { completed: newCompletedStatus, updatedAt: Date.now() };
 
-    // Handle reordering after completion toggle
-    setLists(prevLists =>
-      prevLists.map(listItem => {
-        if (listItem.id === listId) {
-          // Find the item to toggle
-          const itemToToggle = listItem.items.find(item => item.id === itemId);
-          if (!itemToToggle) return listItem;
+    try {
+      // Update local state immediately with completion toggle and reordering in single update
+      setLists(prevLists =>
+        prevLists.map(listItem => {
+          if (listItem.id === listId) {
+            // Find the item to toggle
+            const itemToToggle = listItem.items.find(item => item.id === itemId);
+            if (!itemToToggle) return listItem;
 
-          // Create a new array with the toggled item moved to the appropriate position
-          const newItems = listItem.items.filter(item => item.id !== itemId);
-          const updatedItem = { ...itemToToggle, completed: !itemToToggle.completed };
+            // Create a new array with the toggled item moved to the appropriate position
+            const newItems = listItem.items.filter(item => item.id !== itemId);
+            const updatedItem = { ...itemToToggle, ...updatesWithTimestamp };
 
-          // If completing, move to bottom; if uncompleting, move to top of uncompleted items
-          if (updatedItem.completed) {
-            newItems.push(updatedItem);
-          } else {
-            // Find the index of the first completed item
-            const firstCompletedIndex = newItems.findIndex(item => item.completed);
-            if (firstCompletedIndex === -1) {
-              newItems.unshift(updatedItem);
+            // If completing, move to bottom; if uncompleting, move to top of uncompleted items
+            if (updatedItem.completed) {
+              newItems.push(updatedItem);
             } else {
-              newItems.splice(firstCompletedIndex, 0, updatedItem);
+              // Find the index of the first completed item
+              const firstCompletedIndex = newItems.findIndex(item => item.completed);
+              if (firstCompletedIndex === -1) {
+                newItems.unshift(updatedItem);
+              } else {
+                newItems.splice(firstCompletedIndex, 0, updatedItem);
+              }
             }
-          }
 
-          return {
-            ...listItem,
-            items: newItems,
-            updatedAt: Date.now()
-          };
-        }
-        return listItem;
-      })
-    );
+            return {
+              ...listItem,
+              items: newItems,
+              updatedAt: Date.now()
+            };
+          }
+          return listItem;
+        })
+      );
+
+      // Queue Firebase operation if authenticated (without affecting local state)
+      if (isAuthenticated && user) {
+        queueOperation(async () => {
+          try {
+            // Get the current item to check if it has a Firestore ID
+            const currentList = lists.find(list => list.id === listId);
+            const currentItem = currentList?.items.find(item => item.id === itemId);
+            
+            if (currentItem) {
+              // Create updated item with all required properties
+              const updatedItem: ShoppingItem = {
+                ...currentItem,
+                ...updatesWithTimestamp
+              };
+              
+              // Use saveOrUpdateItemInFirestore which handles both new and existing items
+              const firestoreId = await saveOrUpdateItemInFirestore(updatedItem, listId, user.id, currentItem.firestoreId);
+                
+              // Update the local item with the Firestore ID if it changed
+              if (firestoreId !== currentItem.firestoreId) {
+                setLists(prevLists =>
+                  prevLists.map(list => {
+                    if (list.id === listId) {
+                      return {
+                        ...list,
+                        items: list.items.map(item =>
+                          item.id === itemId
+                            ? { ...item, firestoreId }
+                            : item
+                        )
+                      };
+                    }
+                    return list;
+                  })
+                );
+              }
+            }
+          } catch (error) {
+            console.error('Error in toggleItemCompletion operation:', error);
+            throw error;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling item completion:', error);
+      showAlert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update item. Please try again.',
+        cancelText: 'OK'
+      });
+    }
   };
 
   // Reorder items in a shopping list
@@ -1189,7 +1219,11 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   // Listen for user sign out event
   useEffect(() => {
     const handleUserSignOut = () => {
-      clearLists();
+      // Don't clear lists when signing out - this would overwrite guest storage
+      // Just clear the current list selection
+      setCurrentList(null);
+      // The useLocalStorage hook will automatically switch to guest storage
+      // and load the preserved guest data
     };
 
     window.addEventListener('userSignOut', handleUserSignOut);

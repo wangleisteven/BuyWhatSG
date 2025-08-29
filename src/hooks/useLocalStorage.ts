@@ -47,10 +47,14 @@ export function useLocalStorage<T>(
 
     try {
       const item = window.localStorage.getItem(storageKey);
+      console.log(`[useLocalStorage] Reading from ${storageKey}:`, { item, hasItem: !!item });
       if (item) {
         const parsedData = JSON.parse(item) as T;
-        return filterDeletedData(parsedData);
+        const filteredData = filterDeletedData(parsedData);
+        console.log(`[useLocalStorage] Parsed data from ${storageKey}:`, { parsedData, filteredData });
+        return filteredData;
       }
+      console.log(`[useLocalStorage] No data found in ${storageKey}, returning initialValue`);
       return initialValue;
     } catch (error) {
       console.warn(`Error reading localStorage key "${storageKey}":`, error);
@@ -58,28 +62,60 @@ export function useLocalStorage<T>(
     }
   };
 
-  // State to store our value
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+  // State to store our value - always read from storage on initial mount
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    // On initial mount, always try to read from storage first
+    const storageValue = readValue();
+    console.log(`[useLocalStorage] Initializing ${storageKey}:`, {
+      storageValue,
+      initialValue,
+      storageValueStr: JSON.stringify(storageValue),
+      initialValueStr: JSON.stringify(initialValue),
+      willUseStorage: JSON.stringify(storageValue) !== JSON.stringify(initialValue)
+    });
+    // If storage has meaningful data (different from initialValue), use it
+    if (JSON.stringify(storageValue) !== JSON.stringify(initialValue)) {
+      console.log(`[useLocalStorage] Using storage value for ${storageKey}`);
+      return storageValue;
+    }
+    console.log(`[useLocalStorage] Using initial value for ${storageKey}`);
+    return initialValue;
+  });
 
   // Update stored value when authentication state changes
   useEffect(() => {
-    
     // Save current state to the new storage key before switching
     const newValue = readValue();
     
     setStoredValue(prevValue => {
-      // If we have meaningful data in memory, preserve it and save to new storage
-      if (prevValue !== initialValue && JSON.stringify(prevValue) !== JSON.stringify(initialValue)) {
-        // Save current state to the new storage key
-        try {
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(storageKey, JSON.stringify(prevValue));
+      // Always preserve current state in memory when switching authentication states
+      // Only read from storage if we don't have meaningful data in memory
+      if (JSON.stringify(prevValue) !== JSON.stringify(initialValue)) {
+        // CRITICAL FIX: Only save current state if we're switching TO authenticated storage
+        // Never save authenticated data to guest storage to prevent contamination
+        const isMovingToAuth = isAuthenticated && userId;
+        const isMovingToGuest = !isAuthenticated;
+        
+        if (isMovingToAuth) {
+          // Moving from guest to authenticated - safe to save guest data to auth storage
+          try {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(storageKey, JSON.stringify(prevValue));
+            }
+          } catch (error) {
+            console.warn(`Error saving current state to new storage key:`, error);
           }
-        } catch (error) {
-          console.warn(`Error saving current state to new storage key:`, error);
+          return prevValue; // Keep current state in memory
+        } else if (isMovingToGuest) {
+          // Moving from authenticated to guest - DON'T save authenticated data to guest storage
+          // Instead, load fresh guest data from storage
+          console.log('[useLocalStorage] Switching to guest mode - loading fresh guest data instead of saving authenticated data');
+          return newValue; // Use fresh guest data from storage
         }
-        return prevValue;
+        
+        return prevValue; // Keep current state in memory for other cases
       }
+      // Only use storage value if we don't have meaningful data in memory
       return newValue;
     });
   }, [isAuthenticated, userId]);

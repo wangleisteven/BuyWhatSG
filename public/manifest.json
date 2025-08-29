@@ -63,10 +63,7 @@
       "origin": "https://localhost:5173"
     }
   ],
-  "handle_links": "preferred",
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  },
+
   "edge_side_panel": {
     "preferred_width": 400
   },

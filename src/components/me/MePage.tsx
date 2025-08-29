@@ -1,4 +1,4 @@
-import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff, FiExternalLink } from 'react-icons/fi';
+import { FiUser, FiMoon, FiSun, FiLogOut, FiDownload, FiWifiOff } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { usePWA } from '../../context/PWAContext';
@@ -9,7 +9,7 @@ import './Me.css';
 const MePage = () => {
   const { user, logout, loginWithGoogle, loading, isOnline } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
-  const { canInstall, isPWA, showInstallPrompt, openApp, isPWAInstalled } = usePWA();
+  const { canInstall, isPWA, showInstallPrompt, isPWAInstalled } = usePWA();
 
   // Handle install PWA
   const handleInstallClick = async () => {
@@ -22,14 +22,7 @@ const MePage = () => {
     }
   };
 
-  // Handle open PWA
-  const handleOpenAppClick = async () => {
-    try {
-      await openApp();
-    } catch (error) {
-      // Error handling is done in the openApp function
-    }
-  };
+
 
   return (
     <div className="me-page">
@@ -100,16 +93,7 @@ const MePage = () => {
           </div>
         )}
         
-        {!isPWA && isPWAInstalled && (
-          <div className="setting-item clickable" onClick={handleOpenAppClick}>
-            <div className="setting-info">
-              <span className="setting-icon">
-                <FiExternalLink />
-              </span>
-              <span>Open App</span>
-            </div>
-          </div>
-        )}
+
         
 
 

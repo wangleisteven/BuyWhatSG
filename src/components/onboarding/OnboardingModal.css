@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-index-modal);
   padding: 20px;
   animation: fadeIn 0.3s ease-out;
 }
@@ -87,7 +87,7 @@
 .onboarding-media {
   width: 100%;
   max-width: 300px;
-  height: 200px;
+  height: 300px;
   margin-bottom: 32px;
   border-radius: 16px;
   overflow: hidden;
@@ -279,7 +279,7 @@
   }
 
   .onboarding-media {
-    height: 160px;
+    height: 300px;
     margin-bottom: 24px;
   }
 
@@ -331,7 +331,7 @@
   }
 
   .onboarding-media {
-    height: 140px;
+    height: 300px;
     margin-bottom: 20px;
   }
 

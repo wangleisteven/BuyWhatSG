@@ -11,7 +11,6 @@ const { registerRoute } = workbox.routing;
 const { CacheFirst, NetworkFirst } = workbox.strategies;
 
 const CACHE_NAME = 'buywhatsg-v1';
-const DYNAMIC_CACHE_NAME = 'buywhatsg-dynamic-v1';
 
 // Precache all static assets
 precacheAndRoute(self.__WB_MANIFEST);
@@ -66,45 +65,9 @@ registerRoute(
   })
 );
 
-// Handle protocol handler requests
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  
-  // Handle protocol handler requests for automatic app launching
-  if (url.searchParams.has('handler')) {
-    console.log('[SW] Protocol handler request detected:', url.href);
-    
-    event.respondWith(
-      caches.match('/').then((response) => {
-        // Notify the app about the URL that was opened
-        const handlerPath = url.searchParams.get('handler');
-        if (handlerPath) {
-          self.clients.matchAll().then((clients) => {
-            clients.forEach((client) => {
-              client.postMessage({
-                type: 'URL_OPENED',
-                url: decodeURIComponent(handlerPath)
-              });
-            });
-          });
-        }
-        return response || fetch('/');
-      })
-    );
-  }
-});
 
-// Handle background sync for offline actions
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
-  
-  if (event.tag === 'background-sync') {
-    event.waitUntil(
-      // Handle any pending offline actions here
-      Promise.resolve()
-    );
-  }
-});
+
+
 
 // Handle push notifications
 self.addEventListener('push', (event) => {
@@ -154,7 +117,10 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle URL opening from protocol handlers
 self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
+  // Only log important messages to reduce console noise
+  if (event.data && (event.data.type === 'SKIP_WAITING' || event.data.type === 'GET_VERSION')) {
+    console.log('[SW] Message received:', event.data);
+  }
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -165,19 +131,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Handle protocol handler logic (integrated into main fetch handler above)
 
-// Periodic background sync for data updates
-self.addEventListener('periodicsync', (event) => {
-  console.log('[SW] Periodic sync triggered:', event.tag);
-  
-  if (event.tag === 'content-sync') {
-    event.waitUntil(
-      // Sync data in the background
-      Promise.resolve()
-    );
-  }
-});
 
 // Handle app installation
 self.addEventListener('appinstalled', (event) => {

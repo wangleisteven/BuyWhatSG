@@ -20,28 +20,28 @@ const onboardingScreens: OnboardingScreen[] = [
     id: 1,
     title: "Extract Shopping Lists from Photos",
     description: "Snap a photo of your handwritten list or screenshot chat conversations with your family. Our AI instantly converts them into organized digital shopping lists - no more paper lists or scrolling through chat history!",
-    gifUrl: "/gifs/photo-extraction.svg",
+    gifUrl: "/onboarding_imgs/see_my_picture.png",
     altText: "Photo extraction demo"
   },
   {
     id: 2,
     title: "Voice-to-List Magic",
     description: "Simply speak your shopping needs and watch them appear on your list instantly. Perfect for when your hands are busy or when your family is telling you what to buy - never forget an item again!",
-    gifUrl: "/gifs/voice-input.svg",
+    gifUrl: "/onboarding_imgs/listen_to_me.png",
     altText: "Voice input demo"
   },
   {
     id: 3,
     title: "Smart Category Organization",
     description: "Items are automatically grouped by categories like fruits, dairy, and household items. Shop efficiently by visiting each supermarket section once - no more running back and forth!",
-    gifUrl: "/gifs/category-grouping.svg",
+    gifUrl: "/onboarding_imgs/auto_categorization.png",
     altText: "Category grouping demo"
   },
   {
     id: 4,
     title: "Location-Based Reminders",
     description: "Your shopping list automatically pops up as a notification when you're near any FairPrice store. Never enter a supermarket empty-handed again!",
-    gifUrl: "/gifs/location-reminder.svg",
+    gifUrl: "/onboarding_imgs/location.png",
     altText: "Location reminder demo"
   }
 ];

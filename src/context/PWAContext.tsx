@@ -14,10 +14,8 @@ interface PWAContextType {
   canInstall: boolean;
   isPWA: boolean;
   showInstallPrompt: () => Promise<void>;
-  openApp: () => Promise<void>;
   isPWAInstalled: boolean;
 }
-
 const PWAContext = createContext<PWAContextType | undefined>(undefined);
 
 export const usePWA = () => {
@@ -47,98 +45,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
   const { addToast } = useNotificationSystem();
   const navigate = useNavigate();
 
-  // Auto-open PWA if installed and not already running in PWA mode
-  const autoOpenPWA = async () => {
-    // Skip auto-open if already in PWA mode
-    if (isPWA) {
-      console.log('✅ Already running in PWA mode, skipping auto-open');
-      return;
-    }
-
-    // Skip auto-open if PWA is not marked as installed
-    if (!isPWAInstalled) {
-      console.log('❌ PWA not marked as installed, skipping auto-open');
-      return;
-    }
-
-    // Skip auto-open on iOS (protocol handlers don't work reliably)
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      console.log('🍎 iOS detected, skipping auto-open');
-      return;
-    }
-
-    try {
-      console.log('🚀 Attempting auto-open of PWA...');
-      
-      // Test if protocol handler is registered
-      const isProtocolRegistered = await testProtocolHandler();
-      
-      if (!isProtocolRegistered) {
-        console.warn('❌ Protocol handler not registered, PWA may not be properly installed');
-        // Reset installation status
-        setIsPWAInstalled(false);
-        localStorage.removeItem('pwa-installed');
-        return;
-      }
-
-      console.log('✅ Protocol handler registered, attempting auto-open');
-      
-      // Get current path to preserve navigation state
-      const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      const encodedPath = encodeURIComponent(currentPath);
-      const protocolUrl = `web+buywhatsg://${encodedPath}`;
-      
-      console.log('🔗 Auto-opening with protocol:', protocolUrl);
-      
-      // Set up detection for successful app opening
-      let appOpened = false;
-      let timeoutId: NodeJS.Timeout;
-      
-      const cleanup = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('blur', handleBlur);
-      };
-      
-      const handleVisibilityChange = () => {
-        if (document.hidden && !appOpened) {
-          console.log('✅ PWA auto-opened successfully (visibility change)');
-          appOpened = true;
-          cleanup();
-        }
-      };
-      
-      const handleBlur = () => {
-        if (!appOpened) {
-          setTimeout(() => {
-            if (document.hidden || !document.hasFocus()) {
-              console.log('✅ PWA auto-opened successfully (blur detection)');
-              appOpened = true;
-              cleanup();
-            }
-          }, 100);
-        }
-      };
-      
-      // Set up event listeners
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('blur', handleBlur);
-      
-      // Set timeout for auto-open attempt (shorter than manual open)
-      timeoutId = setTimeout(() => {
-        if (!appOpened) {
-          cleanup();
-          console.log('⏰ Auto-open timeout reached, continuing with website');
-        }
-      }, 1500); // Shorter timeout for auto-open
-      
-      // Attempt to open with protocol handler
-      window.location.href = protocolUrl;
-      
-    } catch (error) {
-      console.error('❌ Error during auto-open:', error);
-    }
-  };
+  
 
   useEffect(() => {
     // Update manifest for current domain (localhost vs ngrok)
@@ -184,10 +91,15 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
           localStorage.removeItem('pwa-installed');
         } else {
           setIsPWAInstalled(true);
+          // Auto-open the installed PWA
+          autoOpenInstalledApp();
         }
       });
     } else if (isStandalone()) {
       setIsPWAInstalled(true);
+    } else if (localStorage.getItem('pwa-installed') === 'true') {
+      // If marked as installed, try to auto-open
+      autoOpenInstalledApp();
     }
 
     // Initialize deep linking
@@ -212,17 +124,11 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     };
     
     window.addEventListener('pwa-url-opened', handlePWAUrlOpened as EventListener);
-    
-    // Attempt auto-open after a short delay to ensure everything is initialized
-    const autoOpenTimer = setTimeout(() => {
-      autoOpenPWA();
-    }, 1000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('pwa-url-opened', handlePWAUrlOpened as EventListener);
-      clearTimeout(autoOpenTimer);
     };
   }, [addToast]);
 
@@ -254,6 +160,57 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     }
   };
 
+  // Auto-open installed PWA function
+  const autoOpenInstalledApp = async (): Promise<void> => {
+    console.log('🔄 Auto-opening installed PWA...');
+    console.log('📱 PWA installed:', isPWAInstalled);
+    console.log('🌐 Running in browser:', !isPWA);
+    console.log('📍 Current URL:', window.location.href);
+    
+    // Don't auto-open if already in PWA mode
+    if (isPWA) {
+      console.log('✅ Already running in PWA mode');
+      return;
+    }
+
+    // Don't auto-open if not marked as installed
+    if (!isPWAInstalled && localStorage.getItem('pwa-installed') !== 'true') {
+      console.log('❌ PWA not marked as installed');
+      return;
+    }
+
+    try {
+      // For iOS Safari, don't auto-open as it's not reliable
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        console.log('🍎 iOS detected - skipping auto-open');
+        return;
+      }
+      
+      // Test if protocol handler is actually registered
+      console.log('🧪 Testing protocol handler registration...');
+      const isProtocolRegistered = await testProtocolHandler();
+      
+      if (!isProtocolRegistered) {
+        console.warn('❌ Protocol handler not registered - skipping auto-open');
+        return;
+      }
+      
+      // Get current path to preserve navigation state
+      const currentPath = window.location.pathname + window.location.search + window.location.hash;
+      // Remove leading slash to avoid double slashes in the protocol URL
+      const cleanPath = currentPath.startsWith('/') ? currentPath.substring(1) : currentPath;
+      const protocolUrl = `web+buywhatsg://${cleanPath}`;
+      
+      console.log('🔗 Auto-opening with protocol:', protocolUrl);
+      
+      // Try to open with protocol handler (no user feedback for auto-open)
+      window.location.href = protocolUrl;
+      
+    } catch (error) {
+      console.error('❌ Error auto-opening app:', error);
+    }
+  };
+
   // Test if protocol handler is actually registered
   const testProtocolHandler = (): Promise<boolean> => {
     return new Promise(async (resolve) => {
@@ -269,7 +226,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
         return;
       }
       
-      // Try getInstalledRelatedApps if available
+      // Try getInstalledRelatedApps if available (Chrome only)
       if ('getInstalledRelatedApps' in navigator) {
         try {
           const relatedApps = await (navigator as any).getInstalledRelatedApps();
@@ -290,16 +247,6 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
         }
       }
       
-      // For protocol handler testing, we need to check if the PWA is actually installed
-      // The most reliable way is to check if localStorage indicates installation
-      // and if the browser supports protocol handlers
-      const isMarkedInstalled = localStorage.getItem('pwa-installed') === 'true';
-      
-      if (!isMarkedInstalled) {
-        resolve(false);
-        return;
-      }
-      
       // Check if protocol handlers are supported
       if (!('registerProtocolHandler' in navigator)) {
         console.log('Protocol handlers not supported in this browser');
@@ -307,146 +254,41 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
         return;
       }
       
-      // If PWA is marked as installed and protocol handlers are supported,
-      // assume the protocol handler is registered
-      resolve(true);
+      // For browsers that support protocol handlers, we need to be more conservative
+      // Protocol handlers only work when the PWA is actually installed via the browser
+      // Not just when we mark it as installed in localStorage
+      
+      // Check if we have a beforeinstallprompt event available
+      // If we do, it means the PWA is not yet installed
+      if (deferredPrompt || canInstall) {
+        console.log('PWA not installed - beforeinstallprompt still available');
+        resolve(false);
+        return;
+      }
+      
+      // If no install prompt is available and we're not in standalone mode,
+      // it could mean the PWA was installed but we're running in a browser tab
+      // In this case, we should test the protocol handler more carefully
+      const isMarkedInstalled = localStorage.getItem('pwa-installed') === 'true';
+      
+      if (!isMarkedInstalled) {
+        resolve(false);
+        return;
+      }
+      
+      // If marked as installed but we can't verify it's actually installed,
+      // we should be conservative and assume it's not properly installed
+      resolve(false);
     });
   };
 
-  const openApp = async (): Promise<void> => {
-    console.log('🚀 Open App button clicked');
-    console.log('📱 PWA installed:', isPWAInstalled);
-    console.log('🌐 Running in browser:', !isPWA);
-    console.log('📍 Current URL:', window.location.href);
-    console.log('🔧 User agent:', navigator.userAgent);
-    
-    if (!isPWAInstalled) {
-      console.warn('❌ PWA not marked as installed');
-      addToast({
-        variant: 'warning',
-        message: 'App not installed. Please install the app first.',
-        duration: 3000
-      });
-      return;
-    }
 
-    if (isPWA) {
-      console.log('✅ Already running in PWA mode');
-      addToast({
-        variant: 'info',
-        message: 'You are already using the app!',
-        duration: 2000
-      });
-      return;
-    }
-
-    try {
-      // For iOS Safari, show specific message
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        console.log('🍎 iOS detected - showing iOS-specific message');
-        addToast({
-          variant: 'info',
-          message: 'Please find the BuyWhatSG app on your device and open it directly.',
-          duration: 4000
-        });
-        return;
-      }
-      
-      // Test if protocol handler is actually registered
-      console.log('🧪 Testing protocol handler registration...');
-      const isProtocolRegistered = await testProtocolHandler();
-      
-      if (!isProtocolRegistered) {
-        console.warn('❌ Protocol handler not registered - PWA may not be truly installed');
-        addToast({
-          variant: 'warning',
-          message: 'App not properly installed. Please reinstall the app from your browser menu.',
-          duration: 5000
-        });
-        // Reset installation status since protocol handler isn't working
-        setIsPWAInstalled(false);
-        localStorage.removeItem('pwa-installed');
-        return;
-      }
-      
-      console.log('✅ Protocol handler is registered');
-      
-      // Get current path to preserve navigation state
-      const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      // The manifest.json protocol handler expects: web+buywhatsg://path -> /?handler=path
-      // So we need to encode the current path as the protocol parameter
-      const encodedPath = encodeURIComponent(currentPath);
-      const protocolUrl = `web+buywhatsg://${encodedPath}`;
-      
-      console.log('🔗 Attempting to open with protocol:', protocolUrl);
-
-      // Set up detection for successful app opening
-      let appOpened = false;
-      let timeoutId: NodeJS.Timeout;
-      
-      const cleanup = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('blur', handleBlur);
-      };
-      
-      const handleVisibilityChange = () => {
-        if (document.hidden && !appOpened) {
-          console.log('✅ App appears to have opened (visibility change)');
-          appOpened = true;
-          cleanup();
-        }
-      };
-      
-      const handleBlur = () => {
-        if (!appOpened) {
-          setTimeout(() => {
-            if (document.hidden || !document.hasFocus()) {
-              console.log('✅ App appears to have opened (blur detection)');
-              appOpened = true;
-              cleanup();
-            }
-          }, 100);
-        }
-      };
-      
-      // Set up event listeners
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('blur', handleBlur);
-      
-      // Set timeout to show failure message
-      timeoutId = setTimeout(() => {
-        if (!appOpened) {
-          cleanup();
-          console.log('❌ Failed to open app - timeout reached');
-          addToast({
-            variant: 'warning',
-            message: 'Unable to open the app. Please find the BuyWhatSG app on your device and open it directly.',
-            duration: 4000
-          });
-        }
-      }, 3000);
-      
-      // Try to open with protocol handler
-      console.log('🔄 Attempting protocol handler redirect...');
-      window.location.href = protocolUrl;
-      
-    } catch (error) {
-      console.error('❌ Error opening app:', error);
-      addToast({
-        variant: 'error',
-        message: 'Failed to open app. Please find the BuyWhatSG app on your device.',
-        duration: 4000
-      });
-    }
-  };
 
   const value: PWAContextType = {
     deferredPrompt,
     canInstall,
     isPWA,
     showInstallPrompt,
-    openApp,
     isPWAInstalled,
   };
 

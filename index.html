@@ -53,34 +53,7 @@
     <!-- Ngrok compatibility -->
     <meta name="ngrok-skip-browser-warning" content="true" />
     
-    <!-- PWA Protocol Handler Support -->
-    <script>
-      // Listen for messages from service worker (registered by Vite PWA plugin)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'URL_OPENED') {
-            console.log('URL opened via protocol handler:', event.data.url);
-            // Handle the URL opening - this will be picked up by the React app
-            window.dispatchEvent(new CustomEvent('pwa-url-opened', {
-              detail: { url: event.data.url }
-            }));
-          }
-        });
-      }
-      
-      // Handle protocol handler requests on page load
-      window.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const handler = urlParams.get('handler');
-        if (handler) {
-          console.log('Protocol handler detected on page load:', handler);
-          // Dispatch event for React app to handle
-          window.dispatchEvent(new CustomEvent('pwa-url-opened', {
-            detail: { url: decodeURIComponent(handler) }
-          }));
-        }
-      });
-    </script>
+
   </head>
   <body>
     <div id="root"></div>
