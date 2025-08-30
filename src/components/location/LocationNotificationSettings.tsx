@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiInfo } from 'react-icons/fi';
+import { FiInfo, FiMapPin, FiNavigation, FiClock } from 'react-icons/fi';
 import { useLocationNotifications } from '../../hooks/useLocationNotifications';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,6 +11,8 @@ import {
   assessTrackNotifyCompatibility,
   type BrowserCompatibility
 } from '../../utils/browserCompatibility';
+import { getEnhancedNearbyStores, type EnhancedFairPriceStore } from '../../services/geolocation';
+import './LocationNotificationSettings.css';
 
 interface LocationNotificationSettingsProps {
   className?: string;
@@ -21,6 +23,10 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [compatibility, setCompatibility] = useState<BrowserCompatibility | null>(null);
   const [showCompatibilityDetails, setShowCompatibilityDetails] = useState(false);
+  const [enhancedStores, setEnhancedStores] = useState<EnhancedFairPriceStore[]>([]);
+  const [isLoadingStores, setIsLoadingStores] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   // Check browser compatibility on mount
   useEffect(() => {
@@ -30,6 +36,7 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
   
   const {
     isTracking,
+    currentLocation,
     permissionStatus,
     geolocationPermissionStatus,
     userPreference,
@@ -47,12 +54,63 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
     // This effect ensures the component re-renders when permission states are updated
   }, [permissionStatus, geolocationPermissionStatus]);
 
+  // Load enhanced nearby stores
+  const loadEnhancedStores = async () => {
+    if (!isTracking || !currentLocation) {
+      setEnhancedStores([]);
+      return;
+    }
+
+    setIsLoadingStores(true);
+    const startTime = Date.now();
+
+    try {
+      console.log(`[LocationSettings] Loading enhanced stores for user at (${currentLocation.latitude}, ${currentLocation.longitude})`);
+      
+      const stores = await getEnhancedNearbyStores(currentLocation, 3);
+      setEnhancedStores(stores);
+      setLastUpdateTime(Date.now());
+      
+      console.log(`[LocationSettings] Loaded ${stores.length} enhanced stores in ${Date.now() - startTime}ms`);
+    } catch (error) {
+      console.error('[LocationSettings] Error loading enhanced stores:', error);
+      setEnhancedStores([]);
+    } finally {
+      setIsLoadingStores(false);
+    }
+  };
+
+  // Auto-refresh stores every 30 seconds when tracking is active
+  useEffect(() => {
+    if (isTracking && currentLocation) {
+      loadEnhancedStores();
+      
+      const interval = setInterval(() => {
+        const now = Date.now();
+        if (now - lastUpdateTime >= 30000) { // 30 seconds
+          loadEnhancedStores();
+        }
+      }, 5000); // Check every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isTracking, currentLocation, lastUpdateTime]);
+
+  // Refresh stores when location updates
+  useEffect(() => {
+    if (currentLocation && isTracking) {
+      loadEnhancedStores();
+    }
+  }, [currentLocation]);
+
   const handleToggleTracking = async () => {
     if (userPreference) {
       setUserPreference(false);
       if (isTracking) {
         stopTracking();
       }
+      setEnhancedStores([]);
+      setShowConfirmation(false);
       return;
     }
 
@@ -71,6 +129,9 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
       
       if (permissions.notification === 'granted' && permissions.geolocation === 'granted') {
         setUserPreference(true);
+        setShowConfirmation(true);
+        // Hide confirmation after 5 seconds
+        setTimeout(() => setShowConfirmation(false), 5000);
         // Start tracking immediately after permissions are granted
         await startTracking();
       } else {
@@ -235,6 +296,72 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
         </div>
 
 
+      {/* Confirmation Message */}
+      {showConfirmation && (
+        <div className="confirmation-message">
+          <div className="confirmation-content">
+            <FiMapPin size={20} className="confirmation-icon" />
+            <div className="confirmation-text">
+              <strong>Notifications are now active.</strong>
+              <br />
+              We will alert you when you're within 50 meters of any FairPrice outlet with your incomplete shopping list.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Store Display */}
+      {isTracking && permissionStatus === 'granted' && geolocationPermissionStatus === 'granted' && (
+        <div className="enhanced-stores-display">
+          <div className="stores-header">
+            <h4>Nearby FairPrice Outlets</h4>
+            {isLoadingStores && <span className="loading-text">Updating...</span>}
+          </div>
+          
+          {enhancedStores.length > 0 ? (
+            <div className="stores-list">
+              {enhancedStores.map((store, index) => (
+                <div key={`${store.name}-${index}`} className="store-item">
+                  <div className="store-info">
+                    <div className="store-name">
+                      <FiMapPin size={16} className="store-icon" />
+                      <span>{store.name}</span>
+                    </div>
+                    <div className="store-details">
+                      <div className="distance-info">
+                        <FiNavigation size={14} className="detail-icon" />
+                        <span>{store.walkingDistance?.toFixed(2)} km</span>
+                      </div>
+                      <div className="time-info">
+                        <FiClock size={14} className="detail-icon" />
+                        <span>{store.walkingTime?.toFixed(0)} min walk</span>
+                      </div>
+                    </div>
+                  </div>
+                  <a 
+                    href={store.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="maps-link"
+                    aria-label={`Get directions to ${store.name}`}
+                  >
+                    <FiNavigation size={20} />
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-stores">
+              {isLoadingStores ? (
+                <span>Loading nearby stores...</span>
+              ) : (
+                <span>No FairPrice outlets found within 2km</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Compatibility Status */}
       {renderCompatibilityStatus()}
 
@@ -262,262 +389,6 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
           </div>
         </div>
       )}
-
-      <style>{`
-        .toggle-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
-          user-select: none;
-          -webkit-user-select: none;
-        }
-
-        .info-button {
-          background: none;
-          border: none;
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          margin-left: var(--spacing-sm);
-          padding: 2px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: color var(--transition-fast) ease;
-        }
-
-        .info-button:hover {
-          color: var(--color-primary);
-        }
-
-        .info-popup-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: var(--z-index-modal);
-          padding: var(--spacing-md);
-        }
-
-        .info-popup {
-          background-color: var(--color-surface);
-          border-radius: var(--radius-lg);
-          max-width: 400px;
-          width: 100%;
-          box-shadow: var(--shadow-lg);
-          animation: slideUp 0.3s ease;
-        }
-
-        .info-popup-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--spacing-md) var(--spacing-md) 0;
-          border-bottom: 1px solid var(--color-border);
-          margin-bottom: var(--spacing-md);
-        }
-
-        .info-popup-header h4 {
-          margin: 0;
-          font-size: var(--font-size-lg);
-          color: var(--color-text);
-        }
-
-        .close-button {
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: var(--color-text-secondary);
-          padding: 0;
-          width: 30px;
-          height: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: background-color var(--transition-fast) ease;
-        }
-
-        .close-button:hover {
-          background-color: var(--color-border);
-        }
-
-        .info-popup-content {
-          padding: 0 var(--spacing-md) var(--spacing-md);
-        }
-
-        .info-popup-content p {
-          margin: 0 0 var(--spacing-md);
-          color: var(--color-text);
-          line-height: 1.5;
-          font-size: var(--font-size-sm);
-        }
-
-        .info-popup-content ul {
-          margin: 0;
-          padding-left: var(--spacing-md);
-          color: var(--color-text-secondary);
-        }
-
-        .info-popup-content li {
-          margin-bottom: var(--spacing-xs);
-          font-size: var(--font-size-xs);
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        /* Browser Compatibility Styles */
-        .compatibility-status {
-          margin-top: var(--spacing-md);
-          padding: var(--spacing-md);
-          background-color: var(--color-surface-secondary);
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-border);
-        }
-        
-        .compatibility-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--spacing-sm);
-        }
-        
-        .compatibility-title {
-          font-weight: 600;
-          color: var(--color-text);
-          font-size: var(--font-size-sm);
-        }
-        
-        .compatibility-toggle {
-          background: none;
-          border: none;
-          color: var(--color-primary);
-          cursor: pointer;
-          font-size: var(--font-size-xs);
-          text-decoration: underline;
-        }
-        
-        .compatibility-summary {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-          margin-bottom: var(--spacing-sm);
-        }
-        
-        .compatibility-indicator {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        
-        .compatibility-indicator.compatible {
-          background-color: var(--color-success);
-        }
-        
-        .compatibility-indicator.incompatible {
-          background-color: var(--color-error);
-        }
-        
-        .compatibility-text {
-          font-size: var(--font-size-xs);
-          color: var(--color-text);
-        }
-        
-        .browser-info {
-          font-size: var(--font-size-xs);
-          color: var(--color-text-secondary);
-        }
-        
-        .compatibility-issues {
-          margin-bottom: var(--spacing-sm);
-        }
-        
-        .compatibility-issues.critical {
-          color: var(--color-error);
-        }
-        
-        .compatibility-issues.warnings {
-          color: var(--color-warning);
-        }
-        
-        .compatibility-issues.recommendations {
-          color: var(--color-info);
-        }
-        
-        .issues-title {
-          font-size: var(--font-size-xs);
-          font-weight: 600;
-          margin: 0 0 var(--spacing-xs);
-        }
-        
-        .compatibility-issues ul {
-          margin: 0;
-          padding-left: var(--spacing-md);
-          font-size: var(--font-size-xs);
-        }
-        
-        .compatibility-issues li {
-          margin-bottom: var(--spacing-xs);
-        }
-        
-        .compatibility-details {
-          margin-top: var(--spacing-sm);
-          padding-top: var(--spacing-sm);
-          border-top: 1px solid var(--color-border);
-        }
-        
-        .feature-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-sm);
-        }
-        
-        .feature-item {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-xs);
-        }
-        
-        .feature-name {
-          font-size: var(--font-size-xs);
-          font-weight: 600;
-          color: var(--color-text);
-        }
-        
-        .feature-status {
-          font-size: var(--font-size-xs);
-        }
-        
-        .feature-status.supported {
-          color: var(--color-success);
-        }
-        
-        .feature-status.unsupported {
-          color: var(--color-error);
-        }
-      `}</style>
     </>
   );
 };

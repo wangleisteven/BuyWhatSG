@@ -577,8 +577,8 @@
     "name": "FairPrice Sengkang Grand Mall",
     "address": "70 Sengkang East Way, #01-01, Sengkang Grand Mall, Singapore 544792",
     "hours": "8am-11pm",
-    "latitude": 1.38315193616746,
-    "longitude": 103.892295809097
+    "latitude": 1.38298163203344,
+    "longitude": 103.892721007746
   },
   {
     "name": "FairPrice Rivervale Mall",
@@ -813,5 +813,558 @@
     "storeType": "FairPrice Xtra",
     "latitude": 1.36923561405404,
     "longitude": 103.848693181185
+  },
+  {
+    "name": "FairPrice Ang Mo Kio Avenue 4",
+    "address": "630 Ang Mo Kio Avenue 4, #01-908, Singapore 560630",
+    "hours": "7am-11pm",
+    "latitude": 1.38054138917049,
+    "longitude": 103.841068277331
+  },
+  {
+    "name": "FairPrice Ang Mo Kio Avenue 5",
+    "address": "725 Ang Mo Kio Avenue 5, #01-2807, Singapore 560725",
+    "hours": "7am-11pm",
+    "latitude": 1.37279081671095,
+    "longitude": 103.846911241497
+  },
+  {
+    "name": "FairPrice Bedok North Street 1",
+    "address": "89 Bedok North Street 1, #01-111, Singapore 460089",
+    "hours": "7am-11pm",
+    "latitude": 1.33233468349262,
+    "longitude": 103.938051284737
+  },
+  {
+    "name": "FairPrice Bedok North Street 3",
+    "address": "539 Bedok North Street 3, #01-69, Singapore 460539",
+    "hours": "7am-11pm",
+    "latitude": 1.33131386579703,
+    "longitude": 103.925307290709
+  },
+  {
+    "name": "FairPrice Bedok Reservoir Crescent",
+    "address": "632 Bedok Reservoir Crescent, #01-882, Singapore 470632",
+    "hours": "7am-11pm",
+    "latitude": 1.33205094618817,
+    "longitude": 103.914145075793
+  },
+  {
+    "name": "FairPrice Bishan Street 22",
+    "address": "283 Bishan Street 22, #01-207, Singapore 570283",
+    "hours": "7am-11pm",
+    "latitude": 1.3589190712993,
+    "longitude": 103.844748631736
+  },
+  {
+    "name": "FairPrice Boon Lay Avenue",
+    "address": "221 Boon Lay Place, #01-200, Singapore 640221",
+    "hours": "7am-11pm",
+    "latitude": 1.34633552457315,
+    "longitude": 103.712430373455
+  },
+  {
+    "name": "FairPrice Boon Lay Drive",
+    "address": "192 Boon Lay Drive, #01-263, Singapore 640192",
+    "hours": "7am-11pm",
+    "latitude": 1.34349197849167,
+    "longitude": 103.712514599563
+  },
+  {
+    "name": "FairPrice Bukit Batok Street 21",
+    "address": "21 Bukit Batok Street 21, #01-218, Singapore 650021",
+    "hours": "7am-11pm",
+    "latitude": 1.34586253909028,
+    "longitude": 103.747905760698
+  },
+  {
+    "name": "FairPrice Bukit Batok Street 31",
+    "address": "371 Bukit Batok Street 31, #01-326, Singapore 650371",
+    "hours": "7am-11pm",
+    "latitude": 1.35925940866068,
+    "longitude": 103.75069463109
+  },
+  {
+    "name": "FairPrice Bukit Batok West Avenue 6",
+    "address": "440 Bukit Batok West Avenue 6, #01-01, Singapore 650440",
+    "hours": "7am-11pm",
+    "latitude": 1.35572308109486,
+    "longitude": 103.739303105372
+  },
+  {
+    "name": "FairPrice Bukit Merah Lane 1",
+    "address": "78 Bukit Merah Lane 1, #01-01, Singapore 150078",
+    "hours": "7am-11pm",
+    "latitude": 1.28843088346846,
+    "longitude": 103.818486786844
+  },
+  {
+    "name": "FairPrice Bukit Panjang Ring Road",
+    "address": "259 Bukit Panjang Ring Road, #01-01, Singapore 670259",
+    "hours": "7am-11pm",
+    "latitude": 1.37750727624619,
+    "longitude": 103.77360557644
+  },
+  {
+    "name": "FairPrice Bukit Panjang Road",
+    "address": "27 Bukit Panjang Road, #01-01, Singapore 679910",
+    "hours": "7am-11pm",
+    "latitude": 1.3816381331934,
+    "longitude": 103.764676250968
+  },
+  {
+    "name": "FairPrice Bukit Timah Plaza",
+    "address": "1 Jalan Anak Bukit, #B1-01, Bukit Timah Plaza, Singapore 588996",
+    "hours": "7am-11pm",
+    "latitude": 1.33875930729064,
+    "longitude": 103.778600077834
+  },
+  {
+    "name": "FairPrice Canberra Crescent",
+    "address": "105 Canberra Crescent, #01-01, Singapore 750105",
+    "hours": "7am-11pm",
+    "latitude": 1.44885564679911,
+    "longitude": 103.832409172149
+  },
+  {
+    "name": "FairPrice Canberra Road",
+    "address": "511 Canberra Road, #01-01, Singapore 750511",
+    "hours": "7am-11pm",
+    "latitude": 1.45384518789713,
+    "longitude": 103.819543348113
+  },
+  {
+    "name": "FairPrice Choa Chu Kang Avenue 4",
+    "address": "678A Choa Chu Kang Avenue 4, #01-01, Singapore 681678",
+    "hours": "7am-11pm",
+    "latitude": 1.40155939783169,
+    "longitude": 103.744743200908
+  },
+  {
+    "name": "FairPrice Choa Chu Kang Crescent",
+    "address": "818 Choa Chu Kang Crescent, #01-01, Singapore 681818",
+    "hours": "7am-11pm",
+    "latitude": 1.37762936263123,
+    "longitude": 103.748488766609
+  },
+  {
+    "name": "FairPrice Choa Chu Kang Street 52",
+    "address": "504 Choa Chu Kang Street 52, #01-01, Singapore 680504",
+    "hours": "7am-11pm",
+    "latitude": 1.3891663147976,
+    "longitude": 103.742676142012
+  },
+  {
+    "name": "FairPrice Clementi Avenue 2",
+    "address": "354 Clementi Avenue 2, #01-253, Singapore 120354",
+    "hours": "7am-11pm",
+    "latitude": 1.31351386405455,
+    "longitude": 103.770861088889
+  },
+  {
+    "name": "FairPrice Clementi Street 13",
+    "address": "608 Clementi Street 13, #01-01, Singapore 120608",
+    "hours": "7am-11pm",
+    "latitude": 1.30434110257324,
+    "longitude": 103.766529796163
+  },
+  {
+    "name": "FairPrice Commonwealth Crescent",
+    "address": "38 Commonwealth Crescent, #01-01, Singapore 140038",
+    "hours": "7am-11pm",
+    "latitude": 1.29750810337269,
+    "longitude": 103.798722843014
+  },
+  {
+    "name": "FairPrice Commonwealth Drive",
+    "address": "703 Commonwealth Drive, #01-01, Singapore 149598",
+    "hours": "7am-11pm",
+    "latitude": 1.30305551306548,
+    "longitude": 103.796483196648
+  },
+  {
+    "name": "FairPrice Compassvale Drive",
+    "address": "277C Compassvale Drive, #01-01, Singapore 543277",
+    "hours": "7am-11pm",
+    "latitude": 1.38233698966981,
+    "longitude": 103.893607838756
+  },
+  {
+    "name": "FairPrice Edgefield Plains",
+    "address": "676A Edgefield Plains, #01-01, Singapore 821676",
+    "hours": "7am-11pm",
+    "latitude": 1.40482709089795,
+    "longitude": 103.909870662158
+  },
+  {
+    "name": "FairPrice Geylang East Central",
+    "address": "101 Geylang East Central, #01-01, Singapore 389701",
+    "hours": "7am-11pm",
+    "latitude": 1.31893906555123,
+    "longitude": 103.886798789505
+  },
+  {
+    "name": "FairPrice Geylang Road",
+    "address": "612/620 Geylang Road, Singapore 389551",
+    "hours": "7am-11pm",
+    "latitude": 1.31415001272084,
+    "longitude": 103.888544866086
+  },
+  {
+    "name": "FairPrice Harbourfront Centre",
+    "address": "1 Maritime Square, #02-01, HarbourFront Centre, Singapore 099253",
+    "hours": "7am-11pm",
+    "latitude": 1.26401293230767,
+    "longitude": 103.82005101011
+  },
+  {
+    "name": "FairPrice Hougang Avenue 8",
+    "address": "682 Hougang Avenue 8, #01-01, Singapore 530682",
+    "hours": "7am-11pm",
+    "latitude": 1.37361830380888,
+    "longitude": 103.885748856217
+  },
+  {
+    "name": "FairPrice Hougang Street 21",
+    "address": "209 Hougang Street 21, #01-01, Singapore 530209",
+    "hours": "7am-11pm",
+    "latitude": 1.35908384091048,
+    "longitude": 103.886055368064
+  },
+  {
+    "name": "FairPrice Jalan Bukit Merah",
+    "address": "161 Jalan Bukit Merah, #01-01, Singapore 150161",
+    "hours": "7am-11pm",
+    "latitude": 1.28391229397444,
+    "longitude": 103.816006111441
+  },
+  {
+    "name": "FairPrice Jalan Jurong Kechil",
+    "address": "2 Jalan Jurong Kechil, #01-01, Singapore 598604",
+    "hours": "7am-11pm",
+    "latitude": 1.34087370084633,
+    "longitude": 103.772459969492
+  },
+  {
+    "name": "FairPrice Jurong East Street 21",
+    "address": "235 Jurong East Street 21, #01-01, Singapore 600235",
+    "hours": "7am-11pm",
+    "latitude": 1.33997597903355,
+    "longitude": 103.742159955768
+  },
+  {
+    "name": "FairPrice Jurong West Street 42",
+    "address": "504 Jurong West Street 42, #01-01, Singapore 640504",
+    "hours": "7am-11pm",
+    "latitude": 1.34982761313556,
+    "longitude": 103.718843750842
+  },
+  {
+    "name": "FairPrice Jurong West Street 52",
+    "address": "505 Jurong West Street 52, #01-01, Singapore 640505",
+    "hours": "7am-11pm",
+    "latitude": 1.34965729130746,
+    "longitude": 103.718443677825
+  },
+  {
+    "name": "FairPrice Jurong West Street 61",
+    "address": "643 Jurong West Street 61, #01-01, Singapore 640643",
+    "hours": "7am-11pm",
+    "latitude": 1.33925229393405,
+    "longitude": 103.695690186551
+  },
+  {
+    "name": "FairPrice Jurong West Street 65",
+    "address": "743 Jurong West Street 65, #01-01, Singapore 640743",
+    "hours": "7am-11pm",
+    "latitude": 1.34729336857901,
+    "longitude": 103.699193660942
+  },
+  {
+    "name": "FairPrice Jurong West Street 71",
+    "address": "762 Jurong West Street 71, #01-01, Singapore 640762",
+    "hours": "7am-11pm",
+    "latitude": 1.34874357136408,
+    "longitude": 103.697732091001
+  },
+  {
+    "name": "FairPrice Jurong West Street 91",
+    "address": "762 Jurong West Street 91, #01-01, Singapore 640762",
+    "hours": "7am-11pm",
+    "latitude": 1.34874357136408,
+    "longitude": 103.697732091001
+  },
+  {
+    "name": "FairPrice Marine Parade Central",
+    "address": "80 Marine Parade Central, #01-01, Singapore 440080",
+    "hours": "7am-11pm",
+    "latitude": 1.30248202632175,
+    "longitude": 103.9077387936
+  },
+  {
+    "name": "FairPrice Marsiling Drive",
+    "address": "71 Marsiling Drive, #01-01, Singapore 730071",
+    "hours": "7am-11pm",
+    "latitude": 1.44235164045446,
+    "longitude": 103.774943528093
+  },
+  {
+    "name": "FairPrice Marsiling Lane",
+    "address": "21 Marsiling Lane, #01-01, Singapore 730021",
+    "hours": "7am-11pm",
+    "latitude": 1.44383165244262,
+    "longitude": 103.777210383669
+  },
+  {
+    "name": "FairPrice Marsiling Rise",
+    "address": "11 Marsiling Rise, #01-01, Singapore 730011",
+    "hours": "7am-11pm",
+    "latitude": 1.44039399880253,
+    "longitude": 103.777942285238
+  },
+  {
+    "name": "FairPrice North Bridge Road",
+    "address": "1 North Bridge Road, #01-01, Singapore 179094",
+    "hours": "7am-11pm",
+    "latitude": 1.28999676915058,
+    "longitude": 103.849282222609
+  },
+  {
+    "name": "FairPrice Orchard Road",
+    "address": "391 Orchard Road, #B4-01, Takashimaya Shopping Centre, Singapore 238872",
+    "hours": "7am-11pm",
+    "latitude": 1.30224168528687,
+    "longitude": 103.835181912297
+  },
+  {
+    "name": "FairPrice Pasir Ris Drive 6",
+    "address": "443 Pasir Ris Drive 6, #01-01, Singapore 510443",
+    "hours": "7am-11pm",
+    "latitude": 1.36940860628198,
+    "longitude": 103.957395750219
+  },
+  {
+    "name": "FairPrice Pasir Ris Street 11",
+    "address": "110 Pasir Ris Street 11, #01-01, Singapore 510110",
+    "hours": "7am-11pm",
+    "latitude": 1.36877568746945,
+    "longitude": 103.956300375904
+  },
+  {
+    "name": "FairPrice Punggol Drive",
+    "address": "681A Punggol Drive, #01-01, Singapore 821681",
+    "hours": "7am-11pm",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "name": "FairPrice Punggol Field",
+    "address": "168 Punggol Field, #01-01, Singapore 820168",
+    "hours": "7am-11pm",
+    "latitude": 1.39423719717117,
+    "longitude": 103.913047323223
+  },
+  {
+    "name": "FairPrice Queensway",
+    "address": "1 Queensway, #01-01, Singapore 149053",
+    "hours": "7am-11pm",
+    "latitude": 1.28759518939869,
+    "longitude": 103.803397287789
+  },
+  {
+    "name": "FairPrice Sembawang Crescent",
+    "address": "354 Sembawang Crescent, #01-01, Singapore 750354",
+    "hours": "7am-11pm",
+    "latitude": 1.45006052122463,
+    "longitude": 103.818406140896
+  },
+  {
+    "name": "FairPrice Sembawang Drive",
+    "address": "30 Sembawang Drive, #01-01, Singapore 757713",
+    "hours": "7am-11pm",
+    "latitude": 1.44819666623789,
+    "longitude": 103.819498634275
+  },
+  {
+    "name": "FairPrice Sengkang East Way",
+    "address": "70 Sengkang East Way, #01-01, Singapore 544792",
+    "hours": "7am-11pm",
+    "latitude": 1.38664846860625,
+    "longitude": 103.892775612171
+  },
+  {
+    "name": "FairPrice Sengkang Square",
+    "address": "1 Sengkang Square, #01-01, Singapore 545078",
+    "hours": "7am-11pm",
+    "latitude": 1.39205314156706,
+    "longitude": 103.89507054384
+  },
+  {
+    "name": "FairPrice Serangoon Avenue 2",
+    "address": "261 Serangoon Avenue 2, #01-01, Singapore 550261",
+    "hours": "7am-11pm",
+    "latitude": 1.35405255194874,
+    "longitude": 103.872524450991
+  },
+  {
+    "name": "FairPrice Serangoon Central",
+    "address": "23 Serangoon Central, #01-01, Singapore 556083",
+    "hours": "7am-11pm",
+    "latitude": 1.35067551435975,
+    "longitude": 103.871861623874
+  },
+  {
+    "name": "FairPrice Serangoon Garden Way",
+    "address": "1 Maju Avenue, #01-01, Singapore 556679",
+    "hours": "7am-11pm",
+    "latitude": 1.36511490572797,
+    "longitude": 103.865159501442
+  },
+  {
+    "name": "FairPrice Simei Street 1",
+    "address": "203 Simei Street 1, #01-01, Singapore 520203",
+    "hours": "7am-11pm",
+    "latitude": 1.35221380431142,
+    "longitude": 103.952454044118
+  },
+  {
+    "name": "FairPrice Tampines Avenue 4",
+    "address": "201 Tampines Avenue 4, #01-01, Singapore 520201",
+    "hours": "7am-11pm",
+    "latitude": 1.35289506312913,
+    "longitude": 103.953585683185
+  },
+  {
+    "name": "FairPrice Tampines Street 11",
+    "address": "110 Tampines Street 11, #01-01, Singapore 521110",
+    "hours": "7am-11pm",
+    "latitude": 1.34694662248116,
+    "longitude": 103.949306963291
+  },
+  {
+    "name": "FairPrice Tampines Street 21",
+    "address": "201 Tampines Street 21, #01-01, Singapore 520201",
+    "hours": "7am-11pm",
+    "latitude": 1.35289506312913,
+    "longitude": 103.953585683185
+  },
+  {
+    "name": "FairPrice Tampines Street 81",
+    "address": "827 Tampines Street 81, #01-01, Singapore 520827",
+    "hours": "7am-11pm",
+    "latitude": 1.34972149544046,
+    "longitude": 103.933719246104
+  },
+  {
+    "name": "FairPrice Tanjong Pagar",
+    "address": "1 Tanjong Pagar Plaza, #01-01, Singapore 082001",
+    "hours": "7am-11pm",
+    "latitude": 1.2755961982077,
+    "longitude": 103.842393171342
+  },
+  {
+    "name": "FairPrice Teck Ghee",
+    "address": "409 Ang Mo Kio Avenue 10, #01-01, Singapore 560409",
+    "hours": "7am-11pm",
+    "latitude": 1.36265410749321,
+    "longitude": 103.855288297631
+  },
+  {
+    "name": "FairPrice Teck Whye",
+    "address": "8 Teck Whye Lane, #01-01, Singapore 680008",
+    "hours": "7am-11pm",
+    "latitude": 1.38066226970719,
+    "longitude": 103.754670556697
+  },
+  {
+    "name": "FairPrice Tiong Bahru",
+    "address": "302 Tiong Bahru Road, #B1-01/02, Tiong Bahru Plaza, Singapore 168732",
+    "hours": "7am-11pm",
+    "latitude": 1.28646345355064,
+    "longitude": 103.826935079694
+  },
+  {
+    "name": "FairPrice Toa Payoh",
+    "address": "190 Toa Payoh Central, #01-01, Singapore 310190",
+    "hours": "7am-11pm",
+    "latitude": 1.33297850244995,
+    "longitude": 103.848832062985
+  },
+  {
+    "name": "FairPrice Toa Payoh Lorong 7",
+    "address": "22 Toa Payoh Lorong 7, #01-01, Singapore 310022",
+    "hours": "7am-11pm",
+    "latitude": 1.33538261333779,
+    "longitude": 103.857003709119
+  },
+  {
+    "name": "FairPrice Toh Guan",
+    "address": "267 Toh Guan Road, #01-01, Singapore 600267",
+    "hours": "7am-11pm",
+    "latitude": 1.34111736866105,
+    "longitude": 103.744794661314
+  },
+  {
+    "name": "FairPrice Upper Boon Keng",
+    "address": "10 Upper Boon Keng Road, #01-01, Singapore 380010",
+    "hours": "7am-11pm",
+    "latitude": 1.31426821795111,
+    "longitude": 103.871811927933
+  },
+  {
+    "name": "FairPrice Upper Serangoon",
+    "address": "476 Upper Serangoon Road, #01-01, Singapore 347476",
+    "hours": "7am-11pm",
+    "latitude": 1.32975985792264,
+    "longitude": 103.870024288788
+  },
+  {
+    "name": "FairPrice VivoCity",
+    "address": "1 Harbourfront Walk, #B2-23, VivoCity, Singapore 098585",
+    "hours": "7am-11pm",
+    "latitude": 1.26431382492761,
+    "longitude": 103.82207343835
+  },
+  {
+    "name": "FairPrice West Coast",
+    "address": "502 West Coast Drive, #01-41, Singapore 120502",
+    "hours": "7am-11pm",
+    "latitude": 1.31190695723944,
+    "longitude": 103.759128018939
+  },
+  {
+    "name": "FairPrice Woodlands Avenue 1",
+    "address": "570B Woodlands Avenue 1, #01-06, Singapore 732570",
+    "hours": "7am-11pm",
+    "latitude": 1.43106395485681,
+    "longitude": 103.790454078756
+  },
+  {
+    "name": "FairPrice Woodlands Civic Centre",
+    "address": "900 South Woodlands Drive, #B1-01, Singapore 730900",
+    "hours": "7am-11pm",
+    "latitude": 1.43505698925938,
+    "longitude": 103.787004308703
+  },
+  {
+    "name": "FairPrice Yew Tee Point",
+    "address": "21 Choa Chu Kang North 6, #B1-01, Yew Tee Point, Singapore 689578",
+    "hours": "7am-11pm",
+    "latitude": 1.39696992267974,
+    "longitude": 103.746443198224
+  },
+  {
+    "name": "FairPrice Yishun MRT",
+    "address": "301 Yishun Avenue 2, #01-02, Yishun MRT Station, Singapore 769093",
+    "hours": "7am-11pm",
+    "latitude": 1.42944308477331,
+    "longitude": 103.835005047246
+  },
+  {
+    "name": "FairPrice Yung Kuang",
+    "address": "63/66 Yung Kuang Road, #01-119 & #02-119, Singapore 610063",
+    "hours": "7am-11pm",
+    "latitude": 1.33221936370928,
+    "longitude": 103.722686866956
   }
 ]

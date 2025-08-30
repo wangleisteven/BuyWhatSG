@@ -6,9 +6,11 @@ import {
   clearLocationWatch,
   clearAllLocationWatchers,
   getNearbyStores,
+  getEnhancedNearbyStores,
   checkGeolocationPermission,
   type GeolocationPosition,
   type FairPriceStore,
+  type EnhancedFairPriceStore,
 } from '../services/geolocation';
 import {
   requestNotificationPermission,
@@ -54,7 +56,7 @@ export const useLocationNotifications = (
   const { lists } = useShoppingList();
   const [isTracking, setIsTracking] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<GeolocationPosition | null>(null);
-  const [nearbyStores, setNearbyStores] = useState<FairPriceStore[]>([]);
+  const [nearbyStores, setNearbyStores] = useState<EnhancedFairPriceStore[]>([]);
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | null>(null);
   const [geolocationPermissionStatus, setGeolocationPermissionStatus] = useState<PermissionState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +71,50 @@ export const useLocationNotifications = (
   const autoTrackingEnabledRef = useRef(false);
   const lastLocationUpdateRef = useRef<number>(0);
   const LOCATION_UPDATE_THROTTLE = 5000; // 5 seconds between store checks
+  const NOTIFICATION_THRESHOLD_METERS = 50; // 50-meter threshold for notifications
+  
+  // Notification history management
+  const getNotificationHistory = useCallback(() => {
+    const history = safeLocalStorage.getItem('notificationHistory');
+    return safeLocalStorage.parseJSON(history, []);
+  }, []);
+
+  const addToNotificationHistory = useCallback((store: EnhancedFairPriceStore, distance: number, lists: string[]) => {
+    const history = getNotificationHistory();
+    const newEntry = {
+      storeName: store.name,
+      storeId: store.outletId,
+      distance,
+      lists,
+      timestamp: new Date().toISOString(),
+      latitude: store.latitude,
+      longitude: store.longitude
+    };
+    
+    // Keep only last 50 notifications
+    const updatedHistory = [newEntry, ...history].slice(0, 50);
+    safeLocalStorage.setItem('notificationHistory', JSON.stringify(updatedHistory));
+    
+    logWithTimestamp('log', '📋 Added to notification history:', newEntry);
+  }, [getNotificationHistory]);
+
+  const logWithTimestamp = useCallback((level: string, message: string, data?: any) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}`;
+    
+    switch (level) {
+      case 'error':
+        console.error(logMessage, data ? data : '');
+        break;
+      case 'warn':
+        console.warn(logMessage, data ? data : '');
+        break;
+      case 'log':
+      default:
+        console.log(logMessage, data ? data : '');
+        break;
+    }
+  }, []);
 
   // Check initial permissions
   useEffect(() => {
@@ -111,9 +157,9 @@ export const useLocationNotifications = (
   
 
 
-  // Handle location updates
+  // Handle location updates with precise notification triggering
   const handleLocationUpdate = useCallback(
-    (position: GeolocationPosition) => {
+    async (position: GeolocationPosition) => {
       setCurrentLocation(position);
       setError(null);
       
@@ -124,50 +170,104 @@ export const useLocationNotifications = (
       if (timeSinceLastUpdate >= LOCATION_UPDATE_THROTTLE) {
         lastLocationUpdateRef.current = now;
         
-        // Check for nearby stores
-        const nearby = getNearbyStores(position);
-        setNearbyStores(nearby);
-
-        // Show notification if near a store and user has active lists
-        if (nearby.length > 0 && permissionStatus === 'granted') {
-          const nearestStore = nearby[0]; // Use the first nearby store (already sorted by distance)
+        logWithTimestamp('log', '📡 Processing location update:', {
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracy: position.accuracy,
+          timestamp: new Date().toISOString()
+        });
+        
+        try {
+          // Get enhanced stores with precise walking distances
+          const enhancedStores = await getEnhancedNearbyStores(position, 3);
           
-          // Check if user has active lists with incomplete items
-          const activeLists = lists.filter(
-            (list) =>
-              list.deleted !== true &&
-              list.items.some((item) => !item.completed && item.deleted !== true)
-          );
+          setNearbyStores(enhancedStores);
 
-          if (activeLists.length > 0) {
-            // Get list IDs for enhanced spam prevention
-            const activeListIds = activeLists.map(list => list.id);
+          // Show notification if near a store and user has active lists
+          if (enhancedStores.length > 0 && permissionStatus === 'granted') {
+            const nearestStore = enhancedStores[0];
             
-            // Use enhanced spam prevention system
-            const spamCheck = checkNotificationSpam(nearestStore, activeListIds, 30);
+            logWithTimestamp('log', '🎯 Nearest store check:', {
+              storeName: nearestStore.name,
+              walkingDistance: `${nearestStore.walkingDistance?.toFixed(3)} km`,
+              walkingTime: `${nearestStore.walkingTime?.toFixed(1)} min`,
+              threshold: `${NOTIFICATION_THRESHOLD_METERS} m`
+            });
+
+            // Check if within 50m threshold using walking distance
+            const distanceInMeters = (nearestStore.walkingDistance || 0) * 1000;
             
-            if (spamCheck.shouldNotify) {
-              showShoppingListNotification(
-                nearestStore,
-                activeLists,
-                onNotificationClick
+            if (distanceInMeters <= NOTIFICATION_THRESHOLD_METERS) {
+              // Check if user has active lists with incomplete items
+              const activeLists = lists.filter(
+                (list) =>
+                  list.deleted !== true &&
+                  list.items.some((item) => !item.completed && item.deleted !== true)
               );
-              
-              // Record notification with enhanced tracking
-              recordNotification(nearestStore, activeListIds);
-              lastNotificationStoreRef.current = nearestStore.name;
+
+              if (activeLists.length > 0) {
+                const activeListIds = activeLists.map(list => list.id);
+                
+                // Enhanced spam prevention with precise distance
+                const spamCheck = checkNotificationSpam(nearestStore, activeListIds, 30);
+                
+                logWithTimestamp('log', '🔔 Notification evaluation:', {
+                  storeName: nearestStore.name,
+                  distance: `${distanceInMeters.toFixed(0)} m`,
+                  activeLists: activeLists.length,
+                  shouldNotify: spamCheck.shouldNotify,
+                  reason: spamCheck.reason
+                });
+                
+                if (spamCheck.shouldNotify) {
+                  // Show enhanced notification with store name and distance
+                  showShoppingListNotification(
+                    nearestStore,
+                    activeLists,
+                    onNotificationClick,
+                    nearestStore.walkingDistance,
+                    nearestStore.walkingTime
+                  );
+                  
+                  // Record notification with history
+                  addToNotificationHistory(nearestStore, distanceInMeters, activeListIds);
+                  recordNotification(nearestStore, activeListIds);
+                  lastNotificationStoreRef.current = nearestStore.name;
+                  
+                  logWithTimestamp('log', '✅ Notification triggered:', {
+                    storeName: nearestStore.name,
+                    distance: `${distanceInMeters.toFixed(0)} m`,
+                    lists: activeListIds
+                  });
+                } else {
+                  logWithTimestamp('log', `⏸️ Notification blocked: ${spamCheck.reason}`);
+                  lastNotificationStoreRef.current = nearestStore.name;
+                }
+              } else {
+                logWithTimestamp('log', '📝 No active lists with incomplete items');
+              }
             } else {
-              // Log spam prevention reason for debugging
-              console.debug(`Notification blocked for ${nearestStore.name}: ${spamCheck.reason}`);
-              
-              // Update last notification store even if blocked to prevent repeated checks
-              lastNotificationStoreRef.current = nearestStore.name;
+              logWithTimestamp('log', `📏 Too far for notification: ${distanceInMeters.toFixed(0)}m > ${NOTIFICATION_THRESHOLD_METERS}m`);
+            }
+          } else {
+            if (enhancedStores.length === 0) {
+              logWithTimestamp('log', '🏪 No FairPrice stores found within 1km');
+            } else if (permissionStatus !== 'granted') {
+              logWithTimestamp('log', `🔒 Notification permission: ${permissionStatus}`);
             }
           }
+        } catch (error) {
+          logWithTimestamp('error', '❌ Error processing location update:', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          
+          // Fallback to basic nearby stores on error
+          const nearby = getNearbyStores(position);
+          setNearbyStores(nearby as any);
         }
       }
     },
-    [lists, permissionStatus, onNotificationClick]
+    [lists, permissionStatus, onNotificationClick, addToNotificationHistory]
   );
 
   // Handle location errors with standardized error handling

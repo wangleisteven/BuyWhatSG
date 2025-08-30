@@ -5,6 +5,77 @@ import {
   mapGenericError
 } from '../utils/errorHandling';
 
+// Console logging utility for debugging
+const logWithTimestamp = (level: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}`;
+  
+  switch (level) {
+    case 'error':
+      console.error(logMessage, data ? data : '');
+      break;
+    case 'warn':
+      console.warn(logMessage, data ? data : '');
+      break;
+    case 'log':
+    default:
+      console.log(logMessage, data ? data : '');
+      break;
+  }
+};
+
+const logUserCoordinates = (coords: GeolocationCoordinates) => {
+  logWithTimestamp('log', '📍 Current User Coordinates:', {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    accuracy: coords.accuracy,
+    altitude: coords.altitude,
+    heading: coords.heading,
+    speed: coords.speed,
+    timestamp: new Date().toISOString()
+  });
+};
+
+
+
+const logDistanceCalculation = (
+  storeName: string,
+  straightDistance: number,
+  walkingDistance?: number,
+  walkingTime?: number,
+  apiResponseTime?: number
+) => {
+  logWithTimestamp('log', `📏 Distance Calculation - ${storeName}:`, {
+    straightLineDistance: `${(straightDistance / 1000).toFixed(3)} km`,
+    walkingDistance: walkingDistance ? `${walkingDistance.toFixed(3)} km` : 'N/A',
+    walkingTime: walkingTime ? `${walkingTime.toFixed(1)} min` : 'N/A',
+    apiResponseTime: apiResponseTime ? `${apiResponseTime.toFixed(2)} ms` : 'N/A',
+    difference: walkingDistance ? `${((walkingDistance * 1000) - straightDistance).toFixed(0)} m` : 'N/A'
+  });
+};
+
+const logApiResponse = (endpoint: string, status: number, responseTime: number, data?: any) => {
+  logWithTimestamp('log', `🌐 OneMap API Response:`, {
+    endpoint,
+    status,
+    responseTime: `${responseTime.toFixed(2)} ms`,
+    data: data || 'No additional data'
+  });
+};
+
+const logCacheOperation = (operation: string, key: string, hit?: boolean) => {
+  logWithTimestamp('log', `💾 Cache ${operation}:`, {
+    key,
+    hit: hit !== undefined ? (hit ? 'HIT' : 'MISS') : 'N/A',
+    timestamp: new Date().toISOString()
+  });
+};
+
+// OneMap API configuration
+const ONEMAP_API_BASE = 'https://www.onemap.gov.sg/api';
+const ONEMAP_ROUTING_ENDPOINT = '/privateapi/routingsvc/route';
+
+
 
 // Load FairPrice stores from JSON file
 const FAIRPRICE_STORES: FairPriceStore[] = fairpriceStoresData as FairPriceStore[];
@@ -35,6 +106,15 @@ export interface FairPriceStore {
   latitude: number | null;
   longitude: number | null;
   hours: string;
+}
+
+export interface EnhancedFairPriceStore extends FairPriceStore {
+  walkingDistance?: number;
+  walkingTime?: number;
+  googleMapsUrl?: string;
+  distanceAccuracy?: 'precise' | 'estimated';
+  outletId?: string;
+  postalCode?: string;
 }
 
 export interface GeolocationPosition {
@@ -118,6 +198,247 @@ const calculateDistanceWithCache = (
 };
 
 /**
+ * Calculate precise walking distance using OneMap API
+ * @param userLat User latitude
+ * @param userLon User longitude
+ * @param storeLat Store latitude
+ * @param storeLon Store longitude
+ * @returns Promise with walking distance in km and time in minutes
+ */
+export const calculateWalkingDistance = async (
+  userLat: number,
+  userLon: number,
+  storeLat: number,
+  storeLon: number
+): Promise<{ distance: number; time: number }> => {
+  const startTime = performance.now();
+  const cacheKey = `walk_${userLat.toFixed(4)}_${userLon.toFixed(4)}_${storeLat.toFixed(4)}_${storeLon.toFixed(4)}`;
+  
+  logCacheOperation('Lookup', cacheKey);
+  
+  try {
+    // Construct OneMap API URL for walking route
+    const params = new URLSearchParams({
+      start: `${userLat},${userLon}`,
+      end: `${storeLat},${storeLon}`,
+      routeType: 'walk',
+      token: 'optional_token_here',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().split(' ')[0],
+      mode: 'TRANSIT,WALK',
+      numItineraries: '1'
+    });
+
+    logWithTimestamp('log', '🚀 Calling OneMap API:', { 
+      url: `${ONEMAP_API_BASE}${ONEMAP_ROUTING_ENDPOINT}?${params.toString()}`,
+      from: [userLat, userLon], 
+      to: [storeLat, storeLon] 
+    });
+
+    const response = await fetch(`${ONEMAP_API_BASE}${ONEMAP_ROUTING_ENDPOINT}?${params}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    const responseTime = performance.now() - startTime;
+    logApiResponse(ONEMAP_ROUTING_ENDPOINT, response.status, responseTime);
+
+    if (!response.ok) {
+      logWithTimestamp('warn', `⚠️ OneMap API error: ${response.status}`, { responseTime });
+      
+      // Fallback to straight-line distance with walking factor
+      const straightDistance = calculateDistance(userLat, userLon, storeLat, storeLon);
+      logDistanceCalculation(
+        `Store (${storeLat}, ${storeLon})`,
+        straightDistance,
+        straightDistance * 1.3 / 1000,
+        (straightDistance * 1.3 / 1000) * 12
+      );
+      
+      return { 
+        distance: straightDistance * 1.3 / 1000, 
+        time: (straightDistance * 1.3 / 1000) * 12 
+      };
+    }
+
+    const data = await response.json();
+    
+    if (!data.plan || !data.plan.itineraries || data.plan.itineraries.length === 0) {
+      logWithTimestamp('warn', '⚠️ OneMap API response missing data:', data);
+      
+      // Fallback to straight-line distance
+      const straightDistance = calculateDistance(userLat, userLon, storeLat, storeLon);
+      logDistanceCalculation(
+        `Store (${storeLat}, ${storeLon})`,
+        straightDistance,
+        straightDistance * 1.3 / 1000,
+        (straightDistance * 1.3 / 1000) * 12
+      );
+      
+      return { 
+        distance: straightDistance * 1.3 / 1000, 
+        time: (straightDistance * 1.3 / 1000) * 12 
+      };
+    }
+
+    const itinerary = data.plan.itineraries[0];
+    const walkingDistance = itinerary.walkDistance / 1000;
+    const walkingTime = itinerary.duration / 60;
+
+    logDistanceCalculation(
+      `Store (${storeLat}, ${storeLon})`,
+      calculateDistance(userLat, userLon, storeLat, storeLon),
+      walkingDistance,
+      walkingTime,
+      responseTime
+    );
+    
+    return { distance: walkingDistance, time: walkingTime };
+    
+  } catch (error) {
+    const responseTime = performance.now() - startTime;
+    logWithTimestamp('error', '❌ Error calculating walking distance:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      responseTime: `${responseTime.toFixed(2)} ms`
+    });
+    
+    // Fallback to straight-line distance
+    const straightDistance = calculateDistance(userLat, userLon, storeLat, storeLon);
+    return { 
+      distance: straightDistance * 1.3 / 1000, 
+      time: (straightDistance * 1.3 / 1000) * 12 
+    };
+  }
+};
+
+/**
+ * Get enhanced FairPrice stores with precise walking distances
+ * @param userPosition User's current position
+ * @param limit Maximum number of stores to return (default: 3)
+ * @returns Promise with enhanced store data including walking distances
+ */
+export const getEnhancedNearbyStores = async (
+  userPosition: GeolocationPosition,
+  limit: number = 3
+): Promise<EnhancedFairPriceStore[]> => {
+  const startTime = performance.now();
+  
+  logWithTimestamp('log', '📍 Starting getEnhancedNearbyStores:', {
+    userPosition,
+    limit,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    // Filter stores within 2km radius for initial filtering
+    const maxRadius = 2000; // 2km
+    const nearbyStores = VALID_STORES.filter(store => {
+      const distance = calculateDistance(
+        userPosition.latitude,
+        userPosition.longitude,
+        store.latitude,
+        store.longitude
+      );
+      const isNearby = distance <= maxRadius;
+      if (isNearby) {
+        logWithTimestamp('log', `✅ Store within 2km radius: ${store.name} (${(distance/1000).toFixed(2)} km)`);
+      }
+      return isNearby;
+    });
+
+    logWithTimestamp('log', `📊 Found ${nearbyStores.length} stores within 2km radius`);
+
+    if (nearbyStores.length === 0) {
+      logWithTimestamp('warn', '⚠️ No stores found within 2km radius');
+      return [];
+    }
+
+    // Calculate walking distances for nearby stores
+    const enhancedStores = await Promise.all(
+      nearbyStores.map(async (store, index) => {
+        try {
+          logWithTimestamp('log', `🚶‍♂️ Calculating walking distance for store ${index + 1}: ${store.name}`);
+          
+          const walkingData = await calculateWalkingDistance(
+            userPosition.latitude,
+            userPosition.longitude,
+            store.latitude,
+            store.longitude
+          );
+
+          const enhancedStore = {
+            ...store,
+            walkingDistance: walkingData.distance,
+            walkingTime: walkingData.time,
+            googleMapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${userPosition.latitude},${userPosition.longitude}&destination=${store.latitude},${store.longitude}&travelmode=walking`,
+            distanceAccuracy: (walkingData.distance < 0.1 ? 'precise' : 'estimated') as 'precise' | 'estimated'
+          };
+          
+          logDistanceCalculation(
+            store.name,
+            calculateDistance(userPosition.latitude, userPosition.longitude, store.latitude, store.longitude),
+            walkingData.distance,
+            walkingData.time
+          );
+          
+          return enhancedStore;
+        } catch (error) {
+          logWithTimestamp('warn', `⚠️ Error calculating walking distance for ${store.name}:`, {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          
+          // Fallback to straight-line distance
+          const straightDistance = calculateDistance(
+            userPosition.latitude,
+            userPosition.longitude,
+            store.latitude,
+            store.longitude
+          ) / 1000;
+          
+          return {
+            ...store,
+            walkingDistance: straightDistance * 1.3,
+            walkingTime: straightDistance * 12,
+            googleMapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${userPosition.latitude},${userPosition.longitude}&destination=${store.latitude},${store.longitude}&travelmode=walking`,
+            distanceAccuracy: 'estimated' as 'estimated'
+          };
+        }
+      })
+    );
+
+    // Sort by walking distance and return top results
+    const sortedStores = enhancedStores
+      .sort((a, b) => (a.walkingDistance || 999) - (b.walkingDistance || 999))
+      .slice(0, limit);
+
+    const totalTime = performance.now() - startTime;
+    logWithTimestamp('log', `✅ getEnhancedNearbyStores completed successfully:`, {
+      storesFound: sortedStores.length,
+      processingTime: `${totalTime.toFixed(2)} ms`,
+      stores: sortedStores.map((store, index) => ({
+        rank: index + 1,
+        name: store.name,
+        walkingDistance: `${store.walkingDistance?.toFixed(2)} km`,
+        walkingTime: `${store.walkingTime?.toFixed(1)} min`,
+        distanceAccuracy: store.distanceAccuracy
+      }))
+    });
+
+    return sortedStores;
+    
+  } catch (error) {
+    const totalTime = performance.now() - startTime;
+    logWithTimestamp('error', '❌ Error in getEnhancedNearbyStores:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      processingTime: `${totalTime.toFixed(2)} ms`
+    });
+    return [];
+  }
+};
+
+/**
  * Clean expired entries from distance cache
  */
 const cleanDistanceCache = (): void => {
@@ -170,8 +491,27 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
       return;
     }
 
+    const options: PositionOptions = {
+      enableHighAccuracy: true, // Enable high-precision geolocation
+      timeout: 15000,
+      maximumAge: 30000
+    };
+
+    logWithTimestamp('log', '📡 Requesting high-precision location...', options);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        logUserCoordinates(position.coords);
+        
+        // Validate accuracy for 10m threshold
+        if (position.coords.accuracy > 10) {
+          logWithTimestamp('warn', `⚠️ Accuracy above 10m threshold: ${position.coords.accuracy}m`);
+        }
+        
+        if (position.coords.accuracy > 50) {
+          logWithTimestamp('error', `❌ Poor accuracy: ${position.coords.accuracy}m - may affect distance calculations`);
+        }
+        
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -179,38 +519,53 @@ export const getCurrentLocation = (): Promise<GeolocationPosition> => {
         });
       },
       (error) => {
-        // Try again with less strict settings if high accuracy fails
-        if (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-              });
-            },
-            (fallbackError) => {
-              const standardError = mapGeolocationError(fallbackError);
-              handleError(standardError);
-              reject(fallbackError);
-            },
-            {
-              enableHighAccuracy: false,
-              timeout: 60000, // 60 seconds
-              maximumAge: 600000, // 10 minutes
-            }
-          );
-        } else {
-          const standardError = mapGeolocationError(error);
-          handleError(standardError);
-          reject(error);
+        let errorMessage = '';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied by user';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+          default:
+            errorMessage = `Unknown geolocation error: ${error.message}`;
         }
+        
+        logWithTimestamp('error', `❌ Geolocation error [${error.code}]:`, {
+          message: errorMessage,
+          details: error.message
+        });
+
+        // Try fallback with reduced accuracy
+        logWithTimestamp('log', '🔄 Attempting fallback with reduced accuracy...');
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            logUserCoordinates(position.coords);
+            logWithTimestamp('warn', '⚠️ Using fallback location accuracy:', {
+              accuracy: `${position.coords.accuracy}m`
+            });
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            });
+          },
+          (fallbackError) => {
+            const standardError = mapGeolocationError(fallbackError);
+            handleError(standardError);
+            reject(fallbackError);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 60000,
+            maximumAge: 600000,
+          }
+        );
       },
-      {
-        enableHighAccuracy: false, // Less strict for better compatibility
-        timeout: 15000, // 15 seconds - shorter timeout
-        maximumAge: 600000, // 10 minutes - allow older positions
-      }
+      options
     );
   });
 };

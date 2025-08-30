@@ -265,7 +265,9 @@ export const showNotification = async (
 export const showShoppingListNotification = async (
   store: FairPriceStore,
   shoppingLists: ShoppingList[],
-  onNotificationClick?: (listId: string) => void
+  onNotificationClick?: (listId: string) => void,
+  walkingDistance?: number,
+  walkingTime?: number
 ): Promise<void> => {
   // Filter for active lists with incomplete items
   const activeLists = shoppingLists.filter(
@@ -284,9 +286,14 @@ export const showShoppingListNotification = async (
     (item) => !item.completed && item.deleted !== true
   ).length;
 
+  let distanceText = '';
+  if (walkingDistance !== undefined && walkingTime !== undefined) {
+    distanceText = `(${walkingDistance.toFixed(2)} km, ${Math.round(walkingTime)} min walk)`;
+  }
+
   const notificationOptions: NotificationOptions = {
     title: 'BuyWhatSG - Shopping Reminder',
-    body: `You're near ${store.name}! Open your shopping list "${primaryList.name}" now? (${incompleteItemsCount} items remaining)`,
+    body: `You're near ${store.name} ${distanceText}! Open your shopping list "${primaryList.name}" now? (${incompleteItemsCount} items remaining)`,
     icon: '/favicon.svg',
     badge: '/favicon.svg',
     tag: `fairprice-${store.name}-${primaryList.id}`,
@@ -295,6 +302,8 @@ export const showShoppingListNotification = async (
       listName: primaryList.name,
       storeId: store.name,
       storeName: store.name,
+      walkingDistance,
+      walkingTime,
     },
   };
 
