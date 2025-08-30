@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { auth, googleProvider } from '../config/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { useToast } from './NotificationSystemContext';
+import { safeLocalStorage } from '../utils/errorHandling';
 
 type User = {
   id: string;
@@ -25,12 +26,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Initialize user from localStorage to prevent blink during page refresh
   const [user, setUser] = useState<User | null>(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
+    const savedUser = safeLocalStorage.getItem('user');
+    return safeLocalStorage.parseJSON(savedUser, null);
   });
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -147,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(prevUser => {
           // Only update if user actually changed to prevent unnecessary re-renders
           if (prevUser?.id !== formattedUser.id) {
-            localStorage.setItem('user', JSON.stringify(formattedUser));
+            safeLocalStorage.setItem('user', JSON.stringify(formattedUser));
             return formattedUser;
           }
           return prevUser;
@@ -156,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(prevUser => {
           // Only update if user was previously set
           if (prevUser !== null) {
-            localStorage.removeItem('user');
+            safeLocalStorage.removeItem('user');
             return null;
           }
           return prevUser;

@@ -4,6 +4,7 @@ import { useShoppingList } from '../../context/ShoppingListContext';
 import type { ShoppingItem } from '../../types';
 import { useSwipe } from '../../hooks/useSwipe';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
+import ImagePopup from '../ui/ImagePopup';
 import './Items.css';
 
 type ShoppingListItemProps = {
@@ -21,6 +22,7 @@ const ShoppingListItem = ({
 }: ShoppingListItemProps) => {
   const { toggleItemCompletion, deleteItem } = useShoppingList();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImagePopup, setShowImagePopup] = useState(false);
   
   // Handle swipe to delete (disabled for archived lists)
   const { 
@@ -125,7 +127,14 @@ const ShoppingListItem = ({
             
             {/* Thumbnail image */}
             {item.photoURL && (
-              <div className="shopping-list-item-thumbnail">
+              <div 
+                className="shopping-list-item-thumbnail"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowImagePopup(true);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <img src={item.photoURL} alt={item.name} />
               </div>
             )}
@@ -156,6 +165,14 @@ const ShoppingListItem = ({
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />
+      
+      {showImagePopup && item.photoURL && (
+        <ImagePopup
+          imageUrl={item.photoURL}
+          altText={item.name}
+          onClose={() => setShowImagePopup(false)}
+        />
+      )}
     </>
   );
 };

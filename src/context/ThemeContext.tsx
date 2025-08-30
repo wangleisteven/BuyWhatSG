@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { safeLocalStorage } from '../utils/errorHandling';
 
 type ThemeContextType = {
   darkMode: boolean;
@@ -11,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // Check local storage for saved theme preference or use system preference
   const [darkMode, setDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('darkMode');
+    const savedTheme = safeLocalStorage.getItem('darkMode');
     if (savedTheme !== null) {
       return savedTheme === 'true';
     }
@@ -25,7 +26,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   // Update local storage and document class when theme changes
   useEffect(() => {
-    localStorage.setItem('darkMode', darkMode.toString());
+    safeLocalStorage.setItem('darkMode', darkMode.toString());
     if (darkMode) {
       document.documentElement.classList.add('dark-mode');
     } else {

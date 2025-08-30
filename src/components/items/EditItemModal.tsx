@@ -8,6 +8,8 @@ import { recommendCategoryAsync } from '../../utils/categoryClassifier';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
+import QuantityInput from '../ui/QuantityInput';
+
 import './Items.css';
 
 type EditItemModalProps = {
@@ -24,6 +26,7 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
   const [category, setCategory] = useState(item.category);
   const [photoURL, setPhotoURL] = useState(item.photoURL || '');
   const [isUploading, setIsUploading] = useState(false);
+
   // const [errorMessage, setErrorMessage] = useState(''); // Commented out as not currently used
   
   // Handle auto-recommendation when item name loses focus
@@ -153,11 +156,46 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
         </div>
         
         <form onSubmit={handleSubmit} className="edit-item-form">
+          <div className="form-group-horizontal">
+            <div className="form-field">
+              <label htmlFor="edit-item-name">Item Name</label>
+              <input
+                id="edit-item-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleItemNameBlur}
+                placeholder="Enter item name"
+                required
+              />
+            </div>
+            
+            <div className="form-field form-field-quantity">
+              <label htmlFor="edit-item-quantity">Quantity</label>
+              <QuantityInput
+                id="edit-item-quantity"
+                value={quantity}
+                onChange={setQuantity}
+              />
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label>Category</label>
+            <CategoryTags
+              value={category}
+              onChange={setCategory}
+            />
+          </div>
+
           {/* Photo upload section */}
           <div className="photo-upload-section">
             {photoURL ? (
               <div className="photo-preview">
-                <img src={photoURL} alt={name} />
+                <img 
+                  src={photoURL} 
+                  alt={name}
+                />
                 <button 
                   type="button"
                   className="button-icon-small remove-photo"
@@ -183,50 +221,6 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
                 />
               </div>
             )}
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="edit-item-name">Item Name</label>
-            <input
-              id="edit-item-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={handleItemNameBlur}
-              placeholder="Enter item name"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="edit-item-quantity">Quantity</label>
-            <input
-              id="edit-item-quantity"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={quantity.toString()}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '' || /^[1-9][0-9]*$/.test(value)) {
-                  setQuantity(value === '' ? 1 : parseInt(value));
-                }
-              }}
-              onBlur={(e) => {
-                if (e.target.value === '' || parseInt(e.target.value) < 1) {
-                  setQuantity(1);
-                }
-              }}
-              placeholder="1"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Category</label>
-            <CategoryTags
-              value={category}
-              onChange={setCategory}
-            />
           </div>
           
           <div className="form-actions">
@@ -258,6 +252,8 @@ const EditItemModal = ({ item, listId, onClose }: EditItemModalProps) => {
       
 
       </div>
+      
+
       
       <ConfirmationDialog
         isOpen={showDeleteConfirm}

@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { FiInfo } from 'react-icons/fi';
 import { useLocationNotifications } from '../../hooks/useLocationNotifications';
 import { useNavigate } from 'react-router-dom';
+import {
+  mapGenericError,
+  handleError
+} from '../../utils/errorHandling';
+import {
+  checkBrowserCompatibility,
+  assessTrackNotifyCompatibility,
+  type BrowserCompatibility
+} from '../../utils/browserCompatibility';
 
 interface LocationNotificationSettingsProps {
   className?: string;
@@ -10,6 +19,14 @@ interface LocationNotificationSettingsProps {
 export const LocationNotificationSettings: React.FC<LocationNotificationSettingsProps> = () => {
   const navigate = useNavigate();
   const [showInfoPopup, setShowInfoPopup] = useState(false);
+  const [compatibility, setCompatibility] = useState<BrowserCompatibility | null>(null);
+  const [showCompatibilityDetails, setShowCompatibilityDetails] = useState(false);
+  
+  // Check browser compatibility on mount
+  useEffect(() => {
+    const compatibilityReport = checkBrowserCompatibility();
+    setCompatibility(compatibilityReport);
+  }, []);
   
   const {
     isTracking,
@@ -39,6 +56,15 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
       return;
     }
 
+    // Check browser compatibility before enabling
+    if (compatibility) {
+      const assessment = assessTrackNotifyCompatibility();
+      if (!assessment.suitable) {
+        setShowCompatibilityDetails(true);
+        return;
+      }
+    }
+
     try {
       // Always request permissions to ensure we have the latest state
       const permissions = await requestPermissions();
@@ -50,16 +76,28 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
       } else {
         // Show specific error messages based on which permission was denied
         if (permissions.notification === 'denied') {
-          console.warn('Notification permission denied. Please enable notifications in browser settings.');
+          const error = mapGenericError(
+            new Error('Notification permission denied'),
+            'permission request'
+          );
+          handleError(error);
         }
         if (permissions.geolocation === 'denied') {
-          console.warn('Location permission denied. Please enable location access in browser settings.');
+          const error = mapGenericError(
+            new Error('Location permission denied'),
+            'permission request'
+          );
+          handleError(error);
         }
         // Reset user preference if permissions are not granted
         setUserPreference(false);
       }
     } catch (error) {
-      console.error('Error requesting permissions:', error);
+      const standardError = mapGenericError(
+        error instanceof Error ? error : new Error(String(error)),
+        'handleToggleTracking'
+      );
+      handleError(standardError);
       setUserPreference(false);
     }
   };
@@ -70,6 +108,102 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
 
   const closeInfoPopup = () => {
     setShowInfoPopup(false);
+  };
+  
+  const renderCompatibilityStatus = () => {
+    if (!compatibility) return null;
+    
+    const assessment = assessTrackNotifyCompatibility();
+    
+    return (
+      <div className="compatibility-status">
+        <div className="compatibility-header">
+          <span className="compatibility-title">Browser Compatibility</span>
+          <button
+            onClick={() => setShowCompatibilityDetails(!showCompatibilityDetails)}
+            className="compatibility-toggle"
+          >
+            {showCompatibilityDetails ? 'Hide Details' : 'Show Details'}
+          </button>
+        </div>
+        
+        <div className="compatibility-summary">
+          <span className={`compatibility-indicator ${
+            assessment.suitable ? 'compatible' : 'incompatible'
+          }`}></span>
+          <span className="compatibility-text">
+            {assessment.suitable ? 'Fully Compatible' : 'Limited Compatibility'}
+          </span>
+          <span className="browser-info">
+            ({compatibility.general.browserName} {compatibility.general.browserVersion})
+          </span>
+        </div>
+        
+        {assessment.criticalIssues.length > 0 && (
+          <div className="compatibility-issues critical">
+            <p className="issues-title">Critical Issues:</p>
+            <ul>
+              {assessment.criticalIssues.map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {assessment.warnings.length > 0 && showCompatibilityDetails && (
+          <div className="compatibility-issues warnings">
+            <p className="issues-title">Warnings:</p>
+            <ul>
+              {assessment.warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {assessment.recommendations.length > 0 && showCompatibilityDetails && (
+          <div className="compatibility-issues recommendations">
+            <p className="issues-title">Recommendations:</p>
+            <ul>
+              {assessment.recommendations.map((rec, index) => (
+                <li key={index}>{rec}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {showCompatibilityDetails && (
+          <div className="compatibility-details">
+            <div className="feature-grid">
+              <div className="feature-item">
+                <span className="feature-name">Geolocation</span>
+                <span className={`feature-status ${
+                  compatibility.geolocation.supported ? 'supported' : 'unsupported'
+                }`}>
+                  {compatibility.geolocation.supported ? '✓ Supported' : '✗ Not Supported'}
+                </span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-name">Notifications</span>
+                <span className={`feature-status ${
+                  compatibility.notifications.supported ? 'supported' : 'unsupported'
+                }`}>
+                  {compatibility.notifications.supported ? '✓ Supported' : '✗ Not Supported'}
+                </span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-name">Storage</span>
+                <span className={`feature-status ${
+                  compatibility.storage.localStorage ? 'supported' : 'unsupported'
+                }`}>
+                  {compatibility.storage.localStorage ? '✓ Available' : '✗ Not Available'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -100,6 +234,9 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
           </button>
         </div>
 
+
+      {/* Compatibility Status */}
+      {renderCompatibilityStatus()}
 
       {/* Info Popup */}
       {showInfoPopup && (
@@ -248,6 +385,137 @@ export const LocationNotificationSettings: React.FC<LocationNotificationSettings
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        
+        /* Browser Compatibility Styles */
+        .compatibility-status {
+          margin-top: var(--spacing-md);
+          padding: var(--spacing-md);
+          background-color: var(--color-surface-secondary);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-border);
+        }
+        
+        .compatibility-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--spacing-sm);
+        }
+        
+        .compatibility-title {
+          font-weight: 600;
+          color: var(--color-text);
+          font-size: var(--font-size-sm);
+        }
+        
+        .compatibility-toggle {
+          background: none;
+          border: none;
+          color: var(--color-primary);
+          cursor: pointer;
+          font-size: var(--font-size-xs);
+          text-decoration: underline;
+        }
+        
+        .compatibility-summary {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-xs);
+          margin-bottom: var(--spacing-sm);
+        }
+        
+        .compatibility-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        
+        .compatibility-indicator.compatible {
+          background-color: var(--color-success);
+        }
+        
+        .compatibility-indicator.incompatible {
+          background-color: var(--color-error);
+        }
+        
+        .compatibility-text {
+          font-size: var(--font-size-xs);
+          color: var(--color-text);
+        }
+        
+        .browser-info {
+          font-size: var(--font-size-xs);
+          color: var(--color-text-secondary);
+        }
+        
+        .compatibility-issues {
+          margin-bottom: var(--spacing-sm);
+        }
+        
+        .compatibility-issues.critical {
+          color: var(--color-error);
+        }
+        
+        .compatibility-issues.warnings {
+          color: var(--color-warning);
+        }
+        
+        .compatibility-issues.recommendations {
+          color: var(--color-info);
+        }
+        
+        .issues-title {
+          font-size: var(--font-size-xs);
+          font-weight: 600;
+          margin: 0 0 var(--spacing-xs);
+        }
+        
+        .compatibility-issues ul {
+          margin: 0;
+          padding-left: var(--spacing-md);
+          font-size: var(--font-size-xs);
+        }
+        
+        .compatibility-issues li {
+          margin-bottom: var(--spacing-xs);
+        }
+        
+        .compatibility-details {
+          margin-top: var(--spacing-sm);
+          padding-top: var(--spacing-sm);
+          border-top: 1px solid var(--color-border);
+        }
+        
+        .feature-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--spacing-sm);
+        }
+        
+        .feature-item {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-xs);
+        }
+        
+        .feature-name {
+          font-size: var(--font-size-xs);
+          font-weight: 600;
+          color: var(--color-text);
+        }
+        
+        .feature-status {
+          font-size: var(--font-size-xs);
+        }
+        
+        .feature-status.supported {
+          color: var(--color-success);
+        }
+        
+        .feature-status.unsupported {
+          color: var(--color-error);
         }
       `}</style>
     </>

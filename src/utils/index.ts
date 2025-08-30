@@ -2,6 +2,8 @@
  * Consolidated utility functions for the application
  */
 
+import { safeLocalStorage } from './errorHandling';
+
 // Date and Time Utilities
 export const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
@@ -260,5 +262,5 @@ export const registerUrlHandler = () => {
 };
 
 export const markPWAAsInstalled = () => {
-  localStorage.setItem('pwa-installed', 'true');
+  safeLocalStorage.setItem('pwa-installed', 'true');
 };

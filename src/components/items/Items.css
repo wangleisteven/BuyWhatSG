@@ -166,6 +166,38 @@
   gap: var(--spacing-xs);
 }
 
+/* Horizontal form layout for name and quantity */
+.form-group-horizontal {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.form-field-quantity {
+  flex: 0 0 auto;
+  min-width: 120px;
+}
+
+/* Responsive behavior for horizontal forms */
+@media (max-width: 400px) {
+  .form-group-horizontal {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+  }
+  
+  .form-field-quantity {
+    min-width: auto;
+  }
+}
+
 .form-actions {
   display: flex;
   justify-content: space-between;

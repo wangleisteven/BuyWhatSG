@@ -9,6 +9,7 @@ import MePage from './components/me/MePage';
 import { NotificationContainer } from './components/ui/NotificationSystem';
 import { useNotificationSystem } from './context/NotificationSystemContext';
 import OnboardingModal from './components/onboarding/OnboardingModal';
+import { safeLocalStorage } from './utils/errorHandling';
 import './App.css';
 
 // Notification container wrapper that uses the unified notification system
@@ -22,7 +23,7 @@ function App() {
 
   useEffect(() => {
     // Check if user has completed onboarding
-    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    const onboardingCompleted = safeLocalStorage.getItem('onboarding_completed');
     if (!onboardingCompleted) {
       // Small delay to ensure app is fully loaded
       const timer = setTimeout(() => {

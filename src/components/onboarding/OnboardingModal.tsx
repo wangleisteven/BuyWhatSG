@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PiX, PiCaretLeft, PiCaretRight } from 'react-icons/pi';
 import './OnboardingModal.css';
+import { safeLocalStorage } from '../../utils/errorHandling';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -100,7 +101,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClos
 
   const handleGetStarted = () => {
     // Mark onboarding as completed
-    localStorage.setItem('onboarding_completed', 'true');
+    safeLocalStorage.setItem('onboarding_completed', 'true');
     onClose();
   };
 

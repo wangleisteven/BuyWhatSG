@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { isStandalone, updateManifestForCurrentDomain } from '../utils';
 import { handleDeepLink, registerUrlHandler, markPWAAsInstalled } from '../utils';
 import { useNotificationSystem } from './NotificationSystemContext';
+import { safeLocalStorage } from '../utils/errorHandling';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -40,7 +41,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
       return true;
     }
     // Otherwise check localStorage
-    return localStorage.getItem('pwa-installed') === 'true';
+    return safeLocalStorage.getItem('pwa-installed') === 'true';
   });
   const { addToast } = useNotificationSystem();
   const navigate = useNavigate();
@@ -82,13 +83,13 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     }
     
     // Check if PWA was previously installed but validate it
-    if (localStorage.getItem('pwa-installed') === 'true' && !isStandalone()) {
+    if (safeLocalStorage.getItem('pwa-installed') === 'true' && !isStandalone()) {
       // Validate installation by testing protocol handler
       testProtocolHandler().then(isRegistered => {
         if (!isRegistered) {
           console.log('🔄 PWA marked as installed but protocol handler not working, resetting status');
           setIsPWAInstalled(false);
-          localStorage.removeItem('pwa-installed');
+          safeLocalStorage.removeItem('pwa-installed');
         } else {
           setIsPWAInstalled(true);
           // Auto-open the installed PWA
@@ -97,7 +98,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
       });
     } else if (isStandalone()) {
       setIsPWAInstalled(true);
-    } else if (localStorage.getItem('pwa-installed') === 'true') {
+    } else if (safeLocalStorage.getItem('pwa-installed') === 'true') {
       // If marked as installed, try to auto-open
       autoOpenInstalledApp();
     }
@@ -174,7 +175,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
     }
 
     // Don't auto-open if not marked as installed
-    if (!isPWAInstalled && localStorage.getItem('pwa-installed') !== 'true') {
+    if (!isPWAInstalled && safeLocalStorage.getItem('pwa-installed') !== 'true') {
       console.log('❌ PWA not marked as installed');
       return;
     }
@@ -269,7 +270,7 @@ export const PWAProvider = ({ children }: PWAProviderProps) => {
       // If no install prompt is available and we're not in standalone mode,
       // it could mean the PWA was installed but we're running in a browser tab
       // In this case, we should test the protocol handler more carefully
-      const isMarkedInstalled = localStorage.getItem('pwa-installed') === 'true';
+      const isMarkedInstalled = safeLocalStorage.getItem('pwa-installed') === 'true';
       
       if (!isMarkedInstalled) {
         resolve(false);

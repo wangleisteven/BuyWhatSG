@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePWA } from '../../context/PWAContext';
+import { safeLocalStorage } from '../../utils/errorHandling';
 import './InstallPrompt.css';
 
 const InstallPrompt = () => {
@@ -8,7 +9,7 @@ const InstallPrompt = () => {
   
   // Show the install prompt after a delay when it becomes available
   useEffect(() => {
-    if (canInstall && !localStorage.getItem('installPromptDismissed')) {
+    if (canInstall && !safeLocalStorage.getItem('installPromptDismissed')) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
       }, 3000);
@@ -32,7 +33,7 @@ const InstallPrompt = () => {
   // Handle dismiss button click
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem('installPromptDismissed', 'true');
+    safeLocalStorage.setItem('installPromptDismissed', 'true');
   };
   
   // Don't show if already installed, no prompt available, or not ready to install

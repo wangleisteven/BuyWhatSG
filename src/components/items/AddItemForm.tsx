@@ -6,6 +6,8 @@ import { compressImage, isImageFile } from '../../utils';
 import { recommendCategoryAsync } from '../../utils/categoryClassifier';
 import { useToast } from '../../context/NotificationSystemContext';
 import CategoryTags from '../ui/CategoryTags';
+import QuantityInput from '../ui/QuantityInput';
+
 import './Items.css';
 
 type AddItemFormProps = {
@@ -20,6 +22,7 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
   const [category, setCategory] = useState('general');
   const [photoURL, setPhotoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
   const { addToast } = useToast();
   // const [errorMessage, setErrorMessage] = useState(''); // Commented out as not currently used
   
@@ -128,11 +131,47 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
         </div>
         
         <form onSubmit={handleSubmit} className="edit-item-form">
+          <div className="form-group-horizontal">
+            <div className="form-field">
+              <label htmlFor="item-name">Item Name</label>
+              <input
+                id="item-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleItemNameBlur}
+                placeholder="Enter item name"
+                autoFocus
+                required
+              />
+            </div>
+            
+            <div className="form-field form-field-quantity">
+              <label htmlFor="item-quantity">Quantity</label>
+              <QuantityInput
+                id="item-quantity"
+                value={quantity}
+                onChange={setQuantity}
+              />
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label>Category</label>
+            <CategoryTags
+              value={category}
+              onChange={setCategory}
+            />
+          </div>
+
           {/* Photo upload section */}
           <div className="photo-upload-section">
             {photoURL ? (
               <div className="photo-preview">
-                <img src={photoURL} alt={name} />
+                <img 
+                  src={photoURL} 
+                  alt={name}
+                />
                 <button 
                   type="button"
                   className="button-icon-small remove-photo"
@@ -158,51 +197,6 @@ const AddItemForm = ({ listId, onClose }: AddItemFormProps) => {
                 />
               </div>
             )}
-          </div>
-
-              <div className="form-group">
-                <label htmlFor="item-name">Item Name</label>
-                <input
-                  id="item-name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onBlur={handleItemNameBlur}
-                  placeholder="Enter item name"
-                  autoFocus
-                  required
-                />
-              </div>
-          
-          <div className="form-group">
-            <label htmlFor="item-quantity">Quantity</label>
-            <input
-              id="item-quantity"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={quantity.toString()}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '' || /^[1-9][0-9]*$/.test(value)) {
-                  setQuantity(value === '' ? 1 : parseInt(value));
-                }
-              }}
-              onBlur={(e) => {
-                if (e.target.value === '' || parseInt(e.target.value) < 1) {
-                  setQuantity(1);
-                }
-              }}
-              placeholder="1"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Category</label>
-            <CategoryTags
-              value={category}
-              onChange={setCategory}
-            />
           </div>
           
           <div className="form-actions">

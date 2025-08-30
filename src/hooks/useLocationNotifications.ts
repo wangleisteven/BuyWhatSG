@@ -4,6 +4,7 @@ import {
   getCurrentLocation,
   watchLocation,
   clearLocationWatch,
+  clearAllLocationWatchers,
   getNearbyStores,
   checkGeolocationPermission,
   type GeolocationPosition,
@@ -12,9 +13,22 @@ import {
 import {
   requestNotificationPermission,
   showShoppingListNotification,
-  wasRecentlyNotified,
-  markAsNotified,
+  checkNotificationSpam,
+  recordNotification,
 } from '../services/notifications';
+import {
+  mapGeolocationError,
+  mapGenericError,
+  handleError,
+  safeLocalStorage,
+  ErrorType
+} from '../utils/errorHandling';
+import {
+  checkBrowserCompatibility,
+  assessTrackNotifyCompatibility,
+  handleCompatibilityIssues,
+  logBrowserCompatibility
+} from '../utils/browserCompatibility';
 
 export interface LocationNotificationState {
   isTracking: boolean;
@@ -45,16 +59,38 @@ export const useLocationNotifications = (
   const [geolocationPermissionStatus, setGeolocationPermissionStatus] = useState<PermissionState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userPreference, setUserPreference] = useState(() => {
-    const saved = localStorage.getItem('trackNotifyPreference');
-    return saved ? JSON.parse(saved) : false;
+    const saved = safeLocalStorage.getItem('trackNotifyPreference');
+    return safeLocalStorage.parseJSON(saved, false);
   });
   
   const watchIdRef = useRef<number | null>(null);
   const lastNotificationStoreRef = useRef<string | null>(null);
+  const isStartingTrackingRef = useRef(false);
+  const autoTrackingEnabledRef = useRef(false);
+  const lastLocationUpdateRef = useRef<number>(0);
+  const LOCATION_UPDATE_THROTTLE = 5000; // 5 seconds between store checks
 
   // Check initial permissions
   useEffect(() => {
     const checkInitialPermissions = async () => {
+      // Check browser compatibility first
+      const compatibility = checkBrowserCompatibility();
+      const assessment = assessTrackNotifyCompatibility();
+      
+      // Log compatibility information in development
+      if (process.env.NODE_ENV === 'development') {
+        logBrowserCompatibility(true);
+      }
+      
+      // Handle critical compatibility issues
+      if (!assessment.suitable) {
+        handleCompatibilityIssues(compatibility);
+        setError('Your browser may not support all Track & Notify features');
+      } else if (assessment.warnings.length > 0) {
+        // Show warnings for potential issues
+        console.warn('Track & Notify compatibility warnings:', assessment.warnings);
+      }
+      
       // Check notification permission
       if ('Notification' in window) {
         setPermissionStatus(Notification.permission);
@@ -80,17 +116,22 @@ export const useLocationNotifications = (
     (position: GeolocationPosition) => {
       setCurrentLocation(position);
       setError(null);
-
-      // Check for nearby stores
-      const nearby = getNearbyStores(position);
-      setNearbyStores(nearby);
-
-      // Show notification if near a store and user has active lists
-      if (nearby.length > 0 && permissionStatus === 'granted') {
-        const nearestStore = nearby[0]; // Use the first nearby store
+      
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastLocationUpdateRef.current;
+      
+      // Throttle store distance calculations to improve performance
+      if (timeSinceLastUpdate >= LOCATION_UPDATE_THROTTLE) {
+        lastLocationUpdateRef.current = now;
         
-        // Check if we've already notified for this store recently
-        if (!wasRecentlyNotified(nearestStore.name)) {
+        // Check for nearby stores
+        const nearby = getNearbyStores(position);
+        setNearbyStores(nearby);
+
+        // Show notification if near a store and user has active lists
+        if (nearby.length > 0 && permissionStatus === 'granted') {
+          const nearestStore = nearby[0]; // Use the first nearby store (already sorted by distance)
+          
           // Check if user has active lists with incomplete items
           const activeLists = lists.filter(
             (list) =>
@@ -99,15 +140,29 @@ export const useLocationNotifications = (
           );
 
           if (activeLists.length > 0) {
-            showShoppingListNotification(
-              nearestStore,
-              activeLists,
-              onNotificationClick
-            );
+            // Get list IDs for enhanced spam prevention
+            const activeListIds = activeLists.map(list => list.id);
             
-            // Mark as notified to prevent spam
-            markAsNotified(nearestStore.name);
-            lastNotificationStoreRef.current = nearestStore.name;
+            // Use enhanced spam prevention system
+            const spamCheck = checkNotificationSpam(nearestStore, activeListIds, 30);
+            
+            if (spamCheck.shouldNotify) {
+              showShoppingListNotification(
+                nearestStore,
+                activeLists,
+                onNotificationClick
+              );
+              
+              // Record notification with enhanced tracking
+              recordNotification(nearestStore, activeListIds);
+              lastNotificationStoreRef.current = nearestStore.name;
+            } else {
+              // Log spam prevention reason for debugging
+              console.debug(`Notification blocked for ${nearestStore.name}: ${spamCheck.reason}`);
+              
+              // Update last notification store even if blocked to prevent repeated checks
+              lastNotificationStoreRef.current = nearestStore.name;
+            }
           }
         }
       }
@@ -115,30 +170,17 @@ export const useLocationNotifications = (
     [lists, permissionStatus, onNotificationClick]
   );
 
-  // Handle location errors
+  // Handle location errors with standardized error handling
   const handleLocationError = useCallback((error: GeolocationPositionError) => {
-    let errorMessage = 'Location access failed';
+    const standardError = mapGeolocationError(error);
     
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
-        break;
-      case error.POSITION_UNAVAILABLE:
-        errorMessage = 'Location temporarily unavailable. Please try again in a moment.';
-        break;
-      case error.TIMEOUT:
-        errorMessage = 'Location request timed out. Please check your connection and try again.';
-        break;
-      default:
-        errorMessage = 'Unable to determine your location. Please try again.';
-        break;
-    }
-    
-    setError(errorMessage);
-    console.warn('Geolocation error:', error.message, 'Code:', error.code);
+    // Use standardized error handling
+    handleError(standardError, (message, _type) => {
+      setError(message);
+    });
     
     // Don't stop tracking completely on temporary errors
-    if (error.code !== error.PERMISSION_DENIED) {
+    if (standardError.type !== ErrorType.PERMISSION_DENIED) {
       // Keep tracking enabled but clear current location
       setCurrentLocation(null);
       setNearbyStores([]);
@@ -150,6 +192,13 @@ export const useLocationNotifications = (
 
   // Start location tracking
   const startTracking = useCallback(async () => {
+    // Prevent concurrent startTracking calls
+    if (isStartingTrackingRef.current || isTracking) {
+      return;
+    }
+    
+    isStartingTrackingRef.current = true;
+    
     try {
       setError(null);
       setIsTracking(true);
@@ -166,28 +215,51 @@ export const useLocationNotifications = (
           // The watch will handle subsequent location attempts
         });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
-      setError(errorMessage);
+      const standardError = mapGenericError(
+        error instanceof Error ? error : new Error(String(error)),
+        'startTracking'
+      );
+      
+      handleError(standardError, (message, _type) => {
+        setError(message);
+      });
+      
       setIsTracking(false);
-      console.error('Failed to start location tracking:', error);
+    } finally {
+      isStartingTrackingRef.current = false;
     }
-  }, [handleLocationUpdate, handleLocationError]);
+  }, [handleLocationUpdate, handleLocationError, isTracking]);
 
   // Stop location tracking
   const stopTracking = useCallback(() => {
+    // Clear the location watcher
     if (watchIdRef.current !== null) {
       clearLocationWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    
+    // Reset all tracking-related state
     setIsTracking(false);
     setCurrentLocation(null);
     setNearbyStores([]);
     setError(null);
+    
+    // Reset synchronization flags
+    isStartingTrackingRef.current = false;
+    autoTrackingEnabledRef.current = false;
   }, []);
 
   // Request both notification and geolocation permissions
   const requestPermissions = useCallback(async (): Promise<{ notification: NotificationPermission; geolocation: PermissionState }> => {
     try {
+      // Check browser compatibility before requesting permissions
+      const assessment = assessTrackNotifyCompatibility();
+      if (!assessment.suitable) {
+        const error = 'Browser does not support required features for Track & Notify';
+        setError(error);
+        return { notification: 'denied', geolocation: 'denied' };
+      }
+      
       // Force notification permission request (especially important for mobile)
       let notificationPermission: NotificationPermission;
       if (Notification.permission === 'default') {
@@ -195,6 +267,8 @@ export const useLocationNotifications = (
       } else {
         notificationPermission = Notification.permission;
       }
+      
+      // Update permission status atomically to prevent race conditions
       setPermissionStatus(notificationPermission);
       
       // Request geolocation permission with better error handling
@@ -212,7 +286,13 @@ export const useLocationNotifications = (
         // If getCurrentLocation fails, check the actual permission state
         try {
           geoPermission = await checkGeolocationPermission();
-        } catch {
+        } catch (error) {
+          const standardError = mapGenericError(
+            error instanceof Error ? error : new Error(String(error)),
+            'geolocation permission request'
+          );
+          
+          handleError(standardError);
           geoPermission = 'denied';
         }
       }
@@ -226,9 +306,15 @@ export const useLocationNotifications = (
       
       return { notification: notificationPermission, geolocation: geoPermission };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to request permissions';
-      setError(errorMessage);
-      console.error('Failed to request permissions:', error);
+      const standardError = mapGenericError(
+        error instanceof Error ? error : new Error(String(error)),
+        'requestPermissions'
+      );
+      
+      handleError(standardError, (message, _type) => {
+        setError(message);
+      });
+      
       return { notification: 'denied', geolocation: 'denied' };
     }
   }, []);
@@ -236,6 +322,14 @@ export const useLocationNotifications = (
   // Manual check for nearby stores
   const checkNearbyStores = useCallback(() => {
     if (currentLocation) {
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastLocationUpdateRef.current;
+      
+      // Respect throttling for manual checks too, but allow immediate update if enough time has passed
+      if (timeSinceLastUpdate >= LOCATION_UPDATE_THROTTLE) {
+        lastLocationUpdateRef.current = now;
+      }
+      
       const nearby = getNearbyStores(currentLocation);
       setNearbyStores(nearby);
     }
@@ -243,7 +337,7 @@ export const useLocationNotifications = (
 
   const handleSetUserPreference = useCallback((enabled: boolean) => {
     setUserPreference(enabled);
-    localStorage.setItem('trackNotifyPreference', JSON.stringify(enabled));
+    safeLocalStorage.setItem('trackNotifyPreference', JSON.stringify(enabled));
     
     // If user disables preference, stop tracking immediately
     if (!enabled && isTracking) {
@@ -253,16 +347,43 @@ export const useLocationNotifications = (
 
   // Auto-enable tracking if both permissions are granted AND user preference is true
   useEffect(() => {
-    if (permissionStatus === 'granted' && geolocationPermissionStatus === 'granted' && userPreference && !isTracking) {
-      startTracking();
+    const shouldAutoTrack = permissionStatus === 'granted' && 
+                           geolocationPermissionStatus === 'granted' && 
+                           userPreference && 
+                           !isTracking && 
+                           !isStartingTrackingRef.current;
+    
+    if (shouldAutoTrack && !autoTrackingEnabledRef.current) {
+      autoTrackingEnabledRef.current = true;
+      startTracking().finally(() => {
+        // Reset auto-tracking flag after attempt
+        setTimeout(() => {
+          autoTrackingEnabledRef.current = false;
+        }, 1000);
+      });
+    }
+    
+    // Reset auto-tracking flag when conditions change
+    if (!shouldAutoTrack) {
+      autoTrackingEnabledRef.current = false;
     }
   }, [permissionStatus, geolocationPermissionStatus, userPreference, isTracking, startTracking]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      // Clear the specific watcher if it exists
       if (watchIdRef.current !== null) {
         clearLocationWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      
+      // Safety cleanup: clear all watchers as a fallback
+      // This prevents memory leaks if multiple instances exist
+      try {
+        clearAllLocationWatchers();
+      } catch (error) {
+        console.warn('Error during location watcher cleanup:', error);
       }
     };
   }, []);
